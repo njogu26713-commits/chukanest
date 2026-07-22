@@ -799,32 +799,27 @@ function MapScreen({ hostels, onOpen }) {
     const L = window.L;
     if (!L) return;
 
-    const map = L.map(mapRef.current, {
-      zoomControl: true,
-    });
+    const map = L.map(mapRef.current, { zoomControl: true });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map);
 
-    // University marker — main anchor point
+    // University marker — main anchor
     const uniIcon = L.divIcon({
       className: "",
-      html: `
-        <div style="display:flex;flex-direction:column;align-items:center;">
-          <div style="background:${C.primaryDark};color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:800;padding:7px 14px;border-radius:12px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.35);border:2px solid #fff;letter-spacing:0.01em;">
-            🎓 Chuka University
-          </div>
-          <div style="width:2px;height:10px;background:${C.primaryDark};"></div>
-          <div style="width:12px;height:12px;border-radius:50%;background:${C.primaryDark};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>
-        </div>`,
+      html: `<div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="background:${C.primaryDark};color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:800;padding:7px 14px;border-radius:12px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.35);border:2px solid #fff;">🎓 Chuka University</div>
+        <div style="width:2px;height:10px;background:${C.primaryDark};"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:${C.primaryDark};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>
+      </div>`,
       iconAnchor: [70, 46],
       iconSize: [140, 46],
     });
     L.marker(CHUKA_UNIVERSITY, { icon: uniIcon }).addTo(map);
 
-    // Hostel markers
+    // Hostel markers + click handlers
     hostels.forEach((h) => {
       const icon = L.divIcon({
         className: "",
@@ -835,9 +830,31 @@ function MapScreen({ hostels, onOpen }) {
       marker.on("click", () => setSelected(h.id));
     });
 
-    // Fit map to show university + all hostels
+    // Fit to all points first
     const allPoints = [CHUKA_UNIVERSITY, ...hostels.map((h) => h.latlng)];
     map.fitBounds(allPoints, { padding: [48, 48] });
+
+    // Fetch & draw road routes from university to each hostel
+    const [uLat, uLon] = CHUKA_UNIVERSITY;
+    hostels.forEach((h) => {
+      const [hLat, hLon] = h.latlng;
+      const url = `https://router.project-osrm.org/route/v1/driving/${uLon},${uLat};${hLon},${hLat}?overview=full&geometries=geojson`;
+      fetch(url)
+        .then((r) => r.json())
+        .then((data) => {
+          if (!mapInstanceRef.current) return;
+          const coords = data?.routes?.[0]?.geometry?.coordinates;
+          if (!coords) return;
+          // OSRM returns [lon, lat]; Leaflet needs [lat, lon]
+          const latLngs = coords.map(([lon, lat]) => [lat, lon]);
+          L.polyline(latLngs, {
+            color: "#3B82F6",
+            weight: 4,
+            opacity: 0.75,
+          }).addTo(mapInstanceRef.current);
+        })
+        .catch(() => {});
+    });
 
     mapInstanceRef.current = map;
     return () => {
