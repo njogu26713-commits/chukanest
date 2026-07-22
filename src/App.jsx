@@ -810,11 +810,19 @@ function MapScreen({ hostels, onOpen }) {
       maxZoom: 19,
     }).addTo(map);
 
-    // University marker
+    // University marker — main anchor point
     const uniIcon = L.divIcon({
       className: "",
-      html: `<div style="background:${C.primaryDark};color:#fff;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);">🎓 Chuka University</div>`,
-      iconAnchor: [60, 24],
+      html: `
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div style="background:${C.primaryDark};color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:800;padding:7px 14px;border-radius:12px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.35);border:2px solid #fff;letter-spacing:0.01em;">
+            🎓 Chuka University
+          </div>
+          <div style="width:2px;height:10px;background:${C.primaryDark};"></div>
+          <div style="width:12px;height:12px;border-radius:50%;background:${C.primaryDark};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>
+        </div>`,
+      iconAnchor: [70, 46],
+      iconSize: [140, 46],
     });
     L.marker(CHUKA_UNIVERSITY, { icon: uniIcon }).addTo(map);
 
