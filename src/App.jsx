@@ -800,8 +800,6 @@ function MapScreen({ hostels, onOpen }) {
     if (!L) return;
 
     const map = L.map(mapRef.current, {
-      center: CHUKA_UNIVERSITY,
-      zoom: 15,
       zoomControl: true,
     });
 
@@ -836,6 +834,10 @@ function MapScreen({ hostels, onOpen }) {
       const marker = L.marker(h.latlng, { icon }).addTo(map);
       marker.on("click", () => setSelected(h.id));
     });
+
+    // Fit map to show university + all hostels
+    const allPoints = [CHUKA_UNIVERSITY, ...hostels.map((h) => h.latlng)];
+    map.fitBounds(allPoints, { padding: [48, 48] });
 
     mapInstanceRef.current = map;
     return () => {
