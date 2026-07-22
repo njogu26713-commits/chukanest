@@ -477,7 +477,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast }) {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto px-4 pb-24 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 pb-24 md:pb-6">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-center">
             <Search size={40} color={C.line} />
@@ -485,9 +485,11 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast }) {
             <div className="mt-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>Try adjusting your filters</div>
           </div>
         ) : (
-          filtered.map((h) => (
-            <HostelCard key={h.id} hostel={h} isFav={favs.has(h.id)} onToggleFav={onToggleFav} onOpen={onOpen} />
-          ))
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 pt-1">
+            {filtered.map((h) => (
+              <HostelCard key={h.id} hostel={h} isFav={favs.has(h.id)} onToggleFav={onToggleFav} onOpen={onOpen} />
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -667,7 +669,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onAddReview
       </div>
 
       {/* CTA */}
-      <div className="fixed bottom-16 left-0 right-0 flex gap-2.5 px-4 pb-2 pt-2" style={{ background: C.surface, borderTop: `1px solid ${C.line}` }}>
+      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 md:left-[220px] flex gap-2.5 px-4 pb-2 pt-2" style={{ background: C.surface, borderTop: `1px solid ${C.line}`, zIndex: 20 }}>
         <PrimaryButton variant="ghost" icon={Phone} onClick={() => showToast(`Calling ${hostel.landlord}…`)}>Call</PrimaryButton>
         <PrimaryButton full icon={MessageCircle} onClick={() => showToast("Opening chat…")}>Contact Landlord</PrimaryButton>
       </div>
@@ -682,7 +684,7 @@ function FavouritesScreen({ hostels, favs, onToggleFav, onOpen }) {
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
       <TopBar title="Saved Hostels" />
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 md:pb-6">
         {favHostels.length === 0 ? (
           <div className="flex flex-col items-center py-20 text-center">
             <Heart size={48} color={C.line} />
@@ -690,9 +692,11 @@ function FavouritesScreen({ hostels, favs, onToggleFav, onOpen }) {
             <div className="mt-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>Tap the heart on any listing to save it here</div>
           </div>
         ) : (
-          favHostels.map((h) => (
-            <HostelCard key={h.id} hostel={h} isFav={true} onToggleFav={onToggleFav} onOpen={onOpen} />
-          ))
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {favHostels.map((h) => (
+              <HostelCard key={h.id} hostel={h} isFav={true} onToggleFav={onToggleFav} onOpen={onOpen} />
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -738,7 +742,7 @@ function MapScreen({ hostels, onOpen }) {
           </button>
         ))}
       </div>
-      <div className="px-4 py-3 pb-24 overflow-x-auto">
+      <div className="px-4 py-3 pb-24 md:pb-4 overflow-x-auto">
         <div className="flex gap-2.5" style={{ width: "max-content" }}>
           {hostels.map((h) => (
             <button
@@ -764,7 +768,7 @@ function ProfileScreen({ role, onLogout, showToast }) {
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
       <TopBar title="My Profile" />
-      <div className="flex-1 overflow-y-auto pb-24 px-4 pt-4 space-y-3">
+      <div className="flex-1 overflow-y-auto pb-24 md:pb-6 px-4 pt-4 space-y-3">
         {/* Avatar */}
         <div className="flex flex-col items-center py-6 rounded-3xl" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl mb-3" style={{ background: C.mint }}>
@@ -871,7 +875,7 @@ function AdminScreen({ showToast }) {
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 md:pb-6 space-y-3">
         {activeTab === "verifications" && (
           verifications.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-center">
@@ -921,9 +925,9 @@ function AdminScreen({ showToast }) {
   );
 }
 
-/* ---------------------------------- BOTTOM NAV ---------------------------------- */
+/* ---------------------------------- NAV (bottom mobile / sidebar desktop) ---------------------------------- */
 
-function BottomNav({ tab, setTab, role }) {
+function AppNav({ tab, setTab, role }) {
   const tabs = [
     { id: "home", label: "Home", icon: Home },
     { id: "map", label: "Map", icon: Navigation },
@@ -933,25 +937,64 @@ function BottomNav({ tab, setTab, role }) {
   ];
 
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 flex items-center justify-around px-2 pb-safe"
-      style={{ background: C.surface, borderTop: `1px solid ${C.line}`, height: 64, zIndex: 30 }}
-    >
-      {tabs.map(({ id, label, icon: Icon }) => {
-        const active = tab === id;
-        return (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all"
-            style={{ background: active ? C.mint : "transparent", minWidth: 56 }}
-          >
-            <Icon size={20} color={active ? C.primaryDark : C.inkSoft} strokeWidth={active ? 2.2 : 1.8} />
-            <span className="text-[10px] font-semibold" style={{ ...fBody, color: active ? C.primaryDark : C.inkSoft }}>{label}</span>
-          </button>
-        );
-      })}
-    </div>
+    <>
+      {/* Mobile bottom nav */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around px-2"
+        style={{ background: C.surface, borderTop: `1px solid ${C.line}`, height: 64, zIndex: 30 }}
+      >
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const active = tab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all"
+              style={{ background: active ? C.mint : "transparent", minWidth: 56 }}
+            >
+              <Icon size={20} color={active ? C.primaryDark : C.inkSoft} strokeWidth={active ? 2.2 : 1.8} />
+              <span className="text-[10px] font-semibold" style={{ ...fBody, color: active ? C.primaryDark : C.inkSoft }}>{label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Desktop sidebar */}
+      <div
+        className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 py-6 px-3"
+        style={{ width: 220, background: C.surface, borderRight: `1px solid ${C.line}`, zIndex: 30 }}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-2.5 px-3 mb-8">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0" style={{ background: C.primary }}>
+            <Building2 size={18} color="#fff" />
+          </div>
+          <span className="text-[17px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>ChukaNest</span>
+        </div>
+
+        <div className="flex flex-col gap-1 flex-1">
+          {tabs.map(({ id, label, icon: Icon }) => {
+            const active = tab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className="flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all text-left"
+                style={{ background: active ? C.mint : "transparent" }}
+              >
+                <Icon size={18} color={active ? C.primaryDark : C.inkSoft} strokeWidth={active ? 2.2 : 1.8} />
+                <span className="text-[14px] font-semibold" style={{ ...fBody, color: active ? C.primaryDark : C.inkSoft }}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="px-3 pt-4" style={{ borderTop: `1px solid ${C.line}` }}>
+          <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Verified student housing</div>
+          <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>near Chuka University</div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -997,9 +1040,9 @@ export default function App() {
 
   if (!role) {
     return (
-      <div className="flex h-screen w-full items-center justify-center" style={{ background: C.bg }}>
-        <div className="w-full max-w-sm h-screen overflow-y-auto" style={{ background: C.bg }}>
-          <Toast toast={toast} />
+      <div className="flex h-screen w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${C.primaryDark} 0%, ${C.primary} 100%)` }}>
+        <Toast toast={toast} />
+        <div className="w-full max-w-sm h-screen md:h-auto md:max-h-[780px] overflow-y-auto md:rounded-3xl md:shadow-2xl" style={{ background: C.bg }}>
           <AuthScreen onAuthed={(r) => setRole(r)} showToast={showToast} />
         </div>
       </div>
@@ -1007,9 +1050,11 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-full items-center justify-center" style={{ background: "#E0E0E0" }}>
-      <div className="relative w-full max-w-sm h-screen overflow-hidden" style={{ background: C.bg }}>
-        <Toast toast={toast} />
+    <div className="flex h-screen w-full overflow-hidden" style={{ background: C.bg }}>
+      <Toast toast={toast} />
+      <AppNav tab={tab} setTab={setTab} role={role} />
+      {/* Content shifts right on desktop to make room for the sidebar */}
+      <div className="flex-1 overflow-hidden md:ml-[220px]">
         {openHostel ? (
           <DetailScreen
             hostel={openHostel}
@@ -1021,14 +1066,13 @@ export default function App() {
             showToast={showToast}
           />
         ) : (
-          <>
+          <div className="h-full">
             {tab === "home" && <HomeScreen hostels={HOSTELS} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} />}
             {tab === "map" && <MapScreen hostels={HOSTELS} onOpen={(id) => { setOpenHostelId(id); }} />}
             {tab === "favs" && <FavouritesScreen hostels={HOSTELS} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} />}
             {tab === "admin" && role === "admin" && <AdminScreen showToast={showToast} />}
             {tab === "profile" && <ProfileScreen role={role} onLogout={() => { setRole(null); setTab("home"); showToast("Logged out"); }} showToast={showToast} />}
-            <BottomNav tab={tab} setTab={setTab} role={role} />
-          </>
+          </div>
         )}
       </div>
     </div>
