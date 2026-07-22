@@ -54,7 +54,7 @@ const HOSTELS = [
     amenities: ["wifi", "water", "power", "security", "cctv"],
     description: "A quiet, gated bedsitter block a 5-minute walk from the Chuka University main gate. Popular with second and third-year students for its reliable water supply and fast Wi-Fi.",
     rules: ["No visitors after 10 PM", "No loud music after 9 PM", "Rent due by the 5th of each month", "No subletting rooms"],
-    pos: { x: 32, y: 40 },
+    latlng: [-0.3353, 37.6462],
   },
   {
     id: "h2", name: "Chuka Scholars Lodge", gender: "Mixed", roomType: "Single",
@@ -64,7 +64,7 @@ const HOSTELS = [
     amenities: ["wifi", "water", "power", "study", "parking"],
     description: "Budget-friendly single rooms with a shared study room, ideal for first-years. Close to matatu stage for easy access to town.",
     rules: ["Visitors sign in at the gate", "Quiet hours 10 PM–6 AM", "Garbage collected daily by 7 AM"],
-    pos: { x: 58, y: 28 },
+    latlng: [-0.3248, 37.6578],
   },
   {
     id: "h3", name: "Fig Tree Hostels", gender: "Male", roomType: "Shared",
@@ -74,7 +74,7 @@ const HOSTELS = [
     amenities: ["water", "power", "parking"],
     description: "Affordable shared rooms (2 per room) with basic amenities. A short boda ride from campus. Verification pending — proceed with normal caution and always view the room in person.",
     rules: ["No overnight guests", "Shared kitchen cleaning roster enforced"],
-    pos: { x: 74, y: 62 },
+    latlng: [-0.3458, 37.6638],
   },
   {
     id: "h4", name: "Riverside Girls Residence", gender: "Female", roomType: "Bedsitter",
@@ -84,7 +84,7 @@ const HOSTELS = [
     amenities: ["wifi", "water", "power", "security", "cctv", "laundry"],
     description: "Premium, fully-fenced residence exclusively for female students with 24-hour security and CCTV throughout the compound. Highly rated for safety.",
     rules: ["Strictly female residents only", "Gate closes at 11 PM", "ID required for all visitors"],
-    pos: { x: 20, y: 55 },
+    latlng: [-0.3368, 37.6443],
   },
   {
     id: "h5", name: "Unity Hostel", gender: "Mixed", roomType: "Single",
@@ -94,7 +94,7 @@ const HOSTELS = [
     amenities: ["wifi", "water", "power", "security"],
     description: "Mid-range single rooms with dependable power backup during outages. Popular for its central location near the market.",
     rules: ["No cooking in rooms after 9 PM", "Rent paid termly for 5% discount"],
-    pos: { x: 46, y: 74 },
+    latlng: [-0.3418, 37.6598],
   },
   {
     id: "h6", name: "Cedar Court", gender: "Male", roomType: "Bedsitter",
@@ -104,7 +104,7 @@ const HOSTELS = [
     amenities: ["wifi", "water", "power", "parking", "study"],
     description: "Spacious bedsitters slightly further from campus, offering better value for money. Boda fare to campus averages KES 50.",
     rules: ["No pets", "Parking for residents only"],
-    pos: { x: 82, y: 38 },
+    latlng: [-0.3148, 37.6678],
   },
   {
     id: "h7", name: "Chuka Elite Suites", gender: "Mixed", roomType: "Single",
@@ -114,7 +114,7 @@ const HOSTELS = [
     amenities: ["wifi", "water", "power", "security", "cctv", "laundry", "study", "parking"],
     description: "Top-tier furnished single rooms right opposite the main gate. All amenities included — the most fully-equipped listing on ChukaNest.",
     rules: ["No loud music", "Visitors register at reception", "No smoking indoors"],
-    pos: { x: 50, y: 18 },
+    latlng: [-0.3292, 37.6518],
   },
 ];
 
@@ -787,59 +787,105 @@ function FavouritesScreen({ hostels, favs, onToggleFav, onOpen }) {
 
 /* ---------------------------------- MAP SCREEN ---------------------------------- */
 
+const CHUKA_UNIVERSITY = [-0.3317, 37.6500];
+
 function MapScreen({ hostels, onOpen }) {
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+    const L = window.L;
+    if (!L) return;
+
+    const map = L.map(mapRef.current, {
+      center: CHUKA_UNIVERSITY,
+      zoom: 15,
+      zoomControl: true,
+    });
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // University marker
+    const uniIcon = L.divIcon({
+      className: "",
+      html: `<div style="background:${C.primaryDark};color:#fff;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);">🎓 Chuka University</div>`,
+      iconAnchor: [60, 24],
+    });
+    L.marker(CHUKA_UNIVERSITY, { icon: uniIcon }).addTo(map);
+
+    // Hostel markers
+    hostels.forEach((h) => {
+      const icon = L.divIcon({
+        className: "",
+        html: `<div style="background:${h.verified ? C.primary : C.inkSoft};color:#fff;font-family:'Roboto Mono',monospace;font-size:11px;font-weight:700;padding:5px 9px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;">KES ${(h.price / 1000).toFixed(1)}k</div>`,
+        iconAnchor: [30, 28],
+      });
+      const marker = L.marker(h.latlng, { icon }).addTo(map);
+      marker.on("click", () => setSelected(h.id));
+    });
+
+    mapInstanceRef.current = map;
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // Pan to selected hostel
+  useEffect(() => {
+    if (!selected || !mapInstanceRef.current) return;
+    const h = hostels.find((x) => x.id === selected);
+    if (h) mapInstanceRef.current.panTo(h.latlng, { animate: true });
+  }, [selected]);
+
+  const selectedHostel = hostels.find((h) => h.id === selected);
+
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
       <TopBar title="Map View" />
-      <div className="flex-1 relative overflow-hidden" style={{ background: "#D8EDD6" }}>
-        {/* Pseudo map background */}
-        <div className="absolute inset-0 opacity-30">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="absolute" style={{ left: `${i * 14}%`, top: 0, bottom: 0, width: 1, background: C.primaryDark }} />
-          ))}
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="absolute" style={{ top: `${i * 14}%`, left: 0, right: 0, height: 1, background: C.primaryDark }} />
-          ))}
-        </div>
-        {/* University marker */}
-        <div className="absolute" style={{ left: "48%", top: "45%", transform: "translate(-50%,-50%)" }}>
-          <div className="flex flex-col items-center">
-            <div className="rounded-xl px-2.5 py-1.5 text-[11px] font-bold" style={{ background: C.primaryDark, color: "#fff", ...fBody }}>Chuka University</div>
-            <div className="h-2 w-0.5" style={{ background: C.primaryDark }} />
-            <div className="h-3 w-3 rounded-full" style={{ background: C.primaryDark }} />
+      <div className="flex-1 relative overflow-hidden">
+        <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
+      </div>
+
+      {/* Bottom sheet: selected hostel or horizontal list */}
+      {selectedHostel ? (
+        <div className="px-4 py-3 pb-24 md:pb-4" style={{ background: C.surface, borderTop: `1px solid ${C.line}` }}>
+          <div className="flex gap-3 items-center">
+            <img src={selectedHostel.images[0]} alt="" className="h-16 w-16 rounded-2xl object-cover shrink-0" style={{ aspectRatio: "1/1" }} />
+            <div className="flex-1 min-w-0">
+              <div className="text-[15px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{selectedHostel.name}</div>
+              <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{selectedHostel.distance} km · {selectedHostel.gender} · {selectedHostel.roomType}</div>
+              <div className="text-[14px] font-bold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {selectedHostel.price.toLocaleString()}/mo</div>
+            </div>
+            <div className="flex flex-col gap-1.5 shrink-0">
+              <PrimaryButton onClick={() => onOpen(selectedHostel.id)}>View</PrimaryButton>
+              <button onClick={() => setSelected(null)} className="text-[11px] text-center font-medium" style={{ ...fBody, color: C.inkSoft }}>Close</button>
+            </div>
           </div>
         </div>
-        {/* Hostel pins */}
-        {hostels.map((h) => (
-          <button
-            key={h.id}
-            onClick={() => onOpen(h.id)}
-            className="absolute flex flex-col items-center"
-            style={{ left: `${h.pos.x}%`, top: `${h.pos.y}%`, transform: "translate(-50%,-100%)" }}
-          >
-            <div className="rounded-xl px-2 py-1 text-[10px] font-bold shadow-md" style={{ background: h.verified ? C.primary : C.inkSoft, color: "#fff", ...fMono, whiteSpace: "nowrap" }}>
-              KES {(h.price / 1000).toFixed(1)}k
-            </div>
-            <div className="h-1.5 w-0.5" style={{ background: h.verified ? C.primary : C.inkSoft }} />
-          </button>
-        ))}
-      </div>
-      <div className="px-4 py-3 pb-24 md:pb-4 overflow-x-auto">
-        <div className="flex gap-2.5" style={{ width: "max-content" }}>
-          {hostels.map((h) => (
-            <button
-              key={h.id}
-              onClick={() => onOpen(h.id)}
-              className="rounded-2xl p-3 text-left"
-              style={{ background: C.surface, border: `1px solid ${C.line}`, width: 170 }}
-            >
-              <img src={h.images[0]} alt="" className="h-20 w-full rounded-xl object-cover mb-2" />
-              <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{h.name}</div>
-              <div className="text-[12px] font-bold" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo</div>
-            </button>
-          ))}
+      ) : (
+        <div className="px-4 py-3 pb-24 md:pb-4 overflow-x-auto" style={{ borderTop: `1px solid ${C.line}` }}>
+          <div className="flex gap-2.5" style={{ width: "max-content" }}>
+            {hostels.map((h) => (
+              <button
+                key={h.id}
+                onClick={() => setSelected(h.id)}
+                className="rounded-2xl p-3 text-left"
+                style={{ background: C.surface, border: `1px solid ${C.line}`, width: 160 }}
+              >
+                <img src={h.images[0]} alt="" className="w-full rounded-xl object-cover mb-2" style={{ aspectRatio: "1/1" }} />
+                <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{h.name}</div>
+                <div className="text-[12px] font-bold" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo</div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
