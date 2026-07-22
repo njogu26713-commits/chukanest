@@ -1,0 +1,393 @@
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import {
+  Home, Search, Heart, User, MapPin, Star, Wifi, Droplets, Zap, ShieldCheck,
+  Car, Shirt, BookOpen, Camera, Phone, MessageCircle, Navigation, Bell, X, Check,
+  ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Pencil, LogOut, Mail, Lock,
+  BarChart3, Users, LayoutDashboard, TrendingUp, AlertTriangle, CheckCircle2,
+  SlidersHorizontal, ImagePlus, Building2, ArrowLeft, Eye, EyeOff, Flag, Clock,
+  ThumbsUp, MoreVertical
+} from "lucide-react";
+
+/* ---------------------------------- THEME ---------------------------------- */
+const C = {
+  primary: "#1B6B45",
+  primaryDark: "#0F4A30",
+  primaryLight: "#2F8F5E",
+  mint: "#E7F3EC",
+  gold: "#C9A227",
+  goldSoft: "#FBF3DC",
+  bg: "#FAFAF6",
+  surface: "#FFFFFF",
+  ink: "#14251B",
+  inkSoft: "#5C6B62",
+  line: "#E4E9E3",
+  danger: "#C1443A",
+  dangerSoft: "#FBEAE8",
+};
+
+const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;600&display=swap');`;
+
+const fDisplay = { fontFamily: "'Plus Jakarta Sans', sans-serif" };
+const fBody = { fontFamily: "'Inter', sans-serif" };
+const fMono = { fontFamily: "'Roboto Mono', monospace" };
+
+/* ---------------------------------- MOCK DATA ---------------------------------- */
+const AMENITY_META = {
+  wifi: { label: "Wi-Fi", icon: Wifi },
+  water: { label: "Water 24/7", icon: Droplets },
+  power: { label: "Electricity", icon: Zap },
+  security: { label: "Security", icon: ShieldCheck },
+  parking: { label: "Parking", icon: Car },
+  laundry: { label: "Laundry", icon: Shirt },
+  study: { label: "Study Room", icon: BookOpen },
+  cctv: { label: "CCTV", icon: Camera },
+};
+
+const img = (seed, w = 800, h = 600) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
+
+const HOSTELS = [
+  {
+    id: "h1", name: "Greenview Annex", gender: "Female", roomType: "Bedsitter",
+    price: 6500, distance: 0.4, rating: 4.7, reviewCount: 38, verified: true,
+    availableRooms: 3, landlord: "Mama Njeri", phone: "+254712345001",
+    images: [img("gv1"), img("gv2"), img("gv3")],
+    amenities: ["wifi", "water", "power", "security", "cctv"],
+    description: "A quiet, gated bedsitter block a 5-minute walk from the Chuka University main gate. Popular with second and third-year students for its reliable water supply and fast Wi-Fi.",
+    rules: ["No visitors after 10 PM", "No loud music after 9 PM", "Rent due by the 5th of each month", "No subletting rooms"],
+    pos: { x: 32, y: 40 },
+  },
+  {
+    id: "h2", name: "Chuka Scholars Lodge", gender: "Mixed", roomType: "Single",
+    price: 4800, distance: 0.9, rating: 4.3, reviewCount: 61, verified: true,
+    availableRooms: 6, landlord: "Mr. Kirimi", phone: "+254712345002",
+    images: [img("cs1"), img("cs2"), img("cs3")],
+    amenities: ["wifi", "water", "power", "study", "parking"],
+    description: "Budget-friendly single rooms with a shared study room, ideal for first-years. Close to matatu stage for easy access to town.",
+    rules: ["Visitors sign in at the gate", "Quiet hours 10 PM–6 AM", "Garbage collected daily by 7 AM"],
+    pos: { x: 58, y: 28 },
+  },
+  {
+    id: "h3", name: "Fig Tree Hostels", gender: "Male", roomType: "Shared",
+    price: 3500, distance: 1.6, rating: 4.0, reviewCount: 22, verified: false,
+    availableRooms: 2, landlord: "John Mutuma", phone: "+254712345003",
+    images: [img("ft1"), img("ft2"), img("ft3")],
+    amenities: ["water", "power", "parking"],
+    description: "Affordable shared rooms (2 per room) with basic amenities. A short boda ride from campus. Verification pending — proceed with normal caution and always view the room in person.",
+    rules: ["No overnight guests", "Shared kitchen cleaning roster enforced"],
+    pos: { x: 74, y: 62 },
+  },
+  {
+    id: "h4", name: "Riverside Girls Residence", gender: "Female", roomType: "Bedsitter",
+    price: 7200, distance: 0.6, rating: 4.9, reviewCount: 54, verified: true,
+    availableRooms: 1, landlord: "Mrs. Kaburu", phone: "+254712345004",
+    images: [img("rg1"), img("rg2"), img("rg3")],
+    amenities: ["wifi", "water", "power", "security", "cctv", "laundry"],
+    description: "Premium, fully-fenced residence exclusively for female students with 24-hour security and CCTV throughout the compound. Highly rated for safety.",
+    rules: ["Strictly female residents only", "Gate closes at 11 PM", "ID required for all visitors"],
+    pos: { x: 20, y: 55 },
+  },
+  {
+    id: "h5", name: "Unity Hostel", gender: "Mixed", roomType: "Single",
+    price: 5200, distance: 1.1, rating: 3.9, reviewCount: 17, verified: true,
+    availableRooms: 4, landlord: "Peter Ntongai", phone: "+254712345005",
+    images: [img("un1"), img("un2"), img("un3")],
+    amenities: ["wifi", "water", "power", "security"],
+    description: "Mid-range single rooms with dependable power backup during outages. Popular for its central location near the market.",
+    rules: ["No cooking in rooms after 9 PM", "Rent paid termly for 5% discount"],
+    pos: { x: 46, y: 74 },
+  },
+  {
+    id: "h6", name: "Cedar Court", gender: "Male", roomType: "Bedsitter",
+    price: 6000, distance: 2.0, rating: 4.4, reviewCount: 29, verified: false,
+    availableRooms: 5, landlord: "Alex Kithinji", phone: "+254712345006",
+    images: [img("cc1"), img("cc2"), img("cc3")],
+    amenities: ["wifi", "water", "power", "parking", "study"],
+    description: "Spacious bedsitters slightly further from campus, offering better value for money. Boda fare to campus averages KES 50.",
+    rules: ["No pets", "Parking for residents only"],
+    pos: { x: 82, y: 38 },
+  },
+  {
+    id: "h7", name: "Chuka Elite Suites", gender: "Mixed", roomType: "Single",
+    price: 8900, distance: 0.3, rating: 4.8, reviewCount: 45, verified: true,
+    availableRooms: 2, landlord: "Diana Gatwiri", phone: "+254712345007",
+    images: [img("ce1"), img("ce2"), img("ce3")],
+    amenities: ["wifi", "water", "power", "security", "cctv", "laundry", "study", "parking"],
+    description: "Top-tier furnished single rooms right opposite the main gate. All amenities included — the most fully-equipped listing on ChukaNest.",
+    rules: ["No loud music", "Visitors register at reception", "No smoking indoors"],
+    pos: { x: 50, y: 18 },
+  },
+];
+
+const INITIAL_REVIEWS = {
+  h1: [
+    { id: "r1", user: "Faith W.", rating: 5, text: "Water never runs out here, even during the dry season. Landlady is very responsive.", date: "2 weeks ago" },
+    { id: "r2", user: "Brenda K.", rating: 4, text: "Good value, though the walk feels longer at night without streetlights.", date: "1 month ago" },
+  ],
+  h2: [{ id: "r3", user: "Mike O.", rating: 4, text: "Great for first-years. The study room got noisy during exam week though.", date: "3 weeks ago" }],
+  h3: [{ id: "r4", user: "Dennis M.", rating: 3, text: "Cheap but the kitchen roster isn't really enforced.", date: "2 months ago" }],
+  h4: [
+    { id: "r5", user: "Purity N.", rating: 5, text: "Safest hostel I've lived in during my four years at Chuka. Worth every shilling.", date: "1 week ago" },
+    { id: "r6", user: "Anne M.", rating: 5, text: "CCTV and the gate guard genuinely make a difference for peace of mind.", date: "3 weeks ago" },
+  ],
+  h5: [{ id: "r7", user: "Collins R.", rating: 4, text: "Power backup saved my project deadline during the last blackout.", date: "1 month ago" }],
+  h6: [{ id: "r8", user: "Ian K.", rating: 4, text: "Bit far but boda guys at the stage know the place well.", date: "2 weeks ago" }],
+  h7: [{ id: "r9", user: "Sharon A.", rating: 5, text: "Feels like a small apartment. Pricey but you get everything included.", date: "5 days ago" }],
+};
+
+const PENDING_VERIFICATIONS = [
+  { id: "pv1", name: "Fig Tree Hostels", submitted: "2 days ago", landlord: "John Mutuma" },
+  { id: "pv2", name: "Cedar Court", submitted: "5 days ago", landlord: "Alex Kithinji" },
+  { id: "pv3", name: "Maple Annex (new)", submitted: "Today", landlord: "Grace Muthoni" },
+];
+
+const FLAGGED_REVIEWS = [
+  { id: "fr1", hostel: "Unity Hostel", user: "Anonymous123", text: "Contains a suspicious external phone number and payment request outside the app.", flaggedBy: "System" },
+  { id: "fr2", hostel: "Fig Tree Hostels", user: "user_882", text: "Reported by 3 students as potentially fake / competitor review.", flaggedBy: "3 students" },
+];
+
+/* ---------------------------------- SMALL UI PRIMITIVES ---------------------------------- */
+
+function VerifiedSeal({ size = "md" }) {
+  const dims = size === "sm" ? 22 : size === "lg" ? 40 : 28;
+  const fontSize = size === "sm" ? 8 : size === "lg" ? 11 : 9;
+  return (
+    <div
+      title="Verified by ChukaNest"
+      style={{
+        width: dims, height: dims, borderRadius: "50%",
+        border: `2px dashed ${C.gold}`, background: C.surface,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0, position: "relative", boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+      }}
+    >
+      <div style={{
+        width: dims - 8, height: dims - 8, borderRadius: "50%", background: C.gold,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <Check size={fontSize + 4} color="#fff" strokeWidth={3} />
+      </div>
+    </div>
+  );
+}
+
+function Chip({ active, onClick, children, icon: Icon }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium transition-all active:scale-95"
+      style={{
+        ...fBody,
+        background: active ? C.primary : C.surface,
+        color: active ? "#fff" : C.ink,
+        border: `1px solid ${active ? C.primary : C.line}`,
+      }}
+    >
+      {Icon && <Icon size={14} />}
+      {children}
+    </button>
+  );
+}
+
+function Badge({ children, tone = "neutral" }) {
+  const tones = {
+    neutral: { bg: C.mint, color: C.primaryDark },
+    gold: { bg: C.goldSoft, color: "#8A6D0C" },
+    danger: { bg: C.dangerSoft, color: C.danger },
+  };
+  const t = tones[tone];
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+      style={{ background: t.bg, color: t.color, ...fBody }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function PrimaryButton({ children, onClick, icon: Icon, full, variant = "solid", disabled }) {
+  const base = "flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50";
+  const style =
+    variant === "solid"
+      ? { background: disabled ? "#9CB8A8" : C.primary, color: "#fff" }
+      : variant === "outline"
+      ? { background: "transparent", color: C.primary, border: `1.5px solid ${C.primary}` }
+      : { background: C.mint, color: C.primaryDark };
+  return (
+    <button onClick={onClick} disabled={disabled} className={`${base} ${full ? "w-full" : ""}`} style={{ ...style, ...fBody }}>
+      {Icon && <Icon size={17} />}
+      {children}
+    </button>
+  );
+}
+
+function Toast({ toast }) {
+  if (!toast) return null;
+  return (
+    <div
+      className="fixed left-1/2 z-50 -translate-x-1/2 rounded-2xl px-4 py-3 text-sm font-medium shadow-lg transition-all"
+      style={{ ...fBody, top: 70, background: C.ink, color: "#fff", maxWidth: 340 }}
+    >
+      {toast}
+    </div>
+  );
+}
+
+function StarRow({ rating, size = 13, onRate }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          size={size}
+          onClick={onRate ? () => onRate(n) : undefined}
+          fill={n <= rating ? C.gold : "none"}
+          color={n <= rating ? C.gold : C.line}
+          style={onRate ? { cursor: "pointer" } : undefined}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TopBar({ title, onBack, right }) {
+  return (
+    <div
+      className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3.5"
+      style={{ background: C.surface, borderBottom: `1px solid ${C.line}` }}
+    >
+      {onBack && (
+        <button onClick={onBack} className="rounded-full p-1.5 active:scale-90 transition-transform" style={{ background: C.mint }}>
+          <ArrowLeft size={18} color={C.primaryDark} />
+        </button>
+      )}
+      <div className="flex-1 truncate text-[17px] font-bold" style={{ ...fDisplay, color: C.ink }}>{title}</div>
+      {right}
+    </div>
+  );
+}
+
+/* ---------------------------------- HOSTEL CARD ---------------------------------- */
+
+function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
+  return (
+    <button
+      onClick={() => onOpen(hostel.id)}
+      className="w-full overflow-hidden rounded-3xl text-left transition-transform active:scale-[0.98]"
+      style={{ background: C.surface, border: `1px solid ${C.line}`, boxShadow: "0 2px 10px rgba(20,37,27,0.05)" }}
+    >
+      <div className="relative">
+        <img src={hostel.images[0]} alt={hostel.name} className="h-40 w-full object-cover" />
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleFav(hostel.id); }}
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full active:scale-90 transition-transform"
+          style={{ background: "rgba(255,255,255,0.92)" }}
+        >
+          <Heart size={17} fill={isFav ? C.danger : "none"} color={isFav ? C.danger : C.ink} />
+        </button>
+        {hostel.verified && (
+          <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: "rgba(255,255,255,0.95)" }}>
+            <VerifiedSeal size="sm" />
+            <span className="text-[11px] font-bold" style={{ ...fBody, color: "#8A6D0C" }}>Verified</span>
+          </div>
+        )}
+        <div className="absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: C.ink, color: "#fff", ...fMono }}>
+          {hostel.availableRooms} rooms left
+        </div>
+      </div>
+      <div className="p-3.5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="text-[15px] font-bold leading-tight" style={{ ...fDisplay, color: C.ink }}>{hostel.name}</div>
+          <div className="flex shrink-0 items-center gap-1">
+            <Star size={13} fill={C.gold} color={C.gold} />
+            <span className="text-[13px] font-semibold" style={{ ...fBody, color: C.ink }}>{hostel.rating}</span>
+          </div>
+        </div>
+        <div className="mt-1 flex items-center gap-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>
+          <MapPin size={12} /> {hostel.distance} km from Chuka University · {hostel.gender}
+        </div>
+        <div className="mt-2.5 flex items-center justify-between">
+          <div style={{ ...fMono, color: C.primaryDark }} className="text-[16px] font-bold">
+            KES {hostel.price.toLocaleString()}<span className="text-[11px] font-medium" style={{ color: C.inkSoft }}>/mo</span>
+          </div>
+          <Badge>{hostel.roomType}</Badge>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ---------------------------------- AUTH SCREEN ---------------------------------- */
+
+function AuthScreen({ onAuthed, showToast }) {
+  const [mode, setMode] = useState("login");
+  const [showPw, setShowPw] = useState(false);
+  return (
+    <div className="flex h-full flex-col px-6 pb-8 pt-14" style={{ background: `linear-gradient(180deg, ${C.primaryDark} 0%, ${C.primary} 45%, ${C.bg} 45%)` }}>
+      <div className="mb-8 flex flex-col items-center">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+          <Building2 size={30} color={C.primary} />
+        </div>
+        <div className="text-2xl font-extrabold text-white" style={fDisplay}>ChukaNest</div>
+        <div className="mt-1 text-[13px] font-medium text-white/85" style={fBody}>Verified student housing, zero scams.</div>
+      </div>
+
+      <div className="mt-4 rounded-3xl p-5" style={{ background: C.surface, boxShadow: "0 10px 30px rgba(20,37,27,0.10)" }}>
+        <div className="mb-5 flex rounded-2xl p-1" style={{ background: C.mint }}>
+          {["login", "signup"].map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className="flex-1 rounded-xl py-2 text-sm font-semibold transition-all"
+              style={{ ...fBody, background: mode === m ? C.surface : "transparent", color: mode === m ? C.primaryDark : C.inkSoft, boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}
+            >
+              {m === "login" ? "Log In" : "Sign Up"}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-3">
+          {mode === "signup" && (
+            <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+              <User size={16} color={C.inkSoft} />
+              <input placeholder="Full name" className="w-full bg-transparent text-sm outline-none" style={fBody} />
+            </div>
+          )}
+          <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+            <Mail size={16} color={C.inkSoft} />
+            <input placeholder="you@students.chuka.ac.ke" className="w-full bg-transparent text-sm outline-none" style={fBody} />
+          </div>
+          <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+            <Lock size={16} color={C.inkSoft} />
+            <input type={showPw ? "text" : "password"} placeholder="Password" className="w-full bg-transparent text-sm outline-none" style={fBody} />
+            <button onClick={() => setShowPw((s) => !s)}>{showPw ? <EyeOff size={16} color={C.inkSoft} /> : <Eye size={16} color={C.inkSoft} />}</button>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <PrimaryButton full onClick={() => { showToast(mode === "login" ? "Welcome back! 🎉" : "Account created — welcome to ChukaNest!"); onAuthed("student"); }}>
+            {mode === "login" ? "Log In" : "Create Account"}
+          </PrimaryButton>
+        </div>
+
+        <div className="my-4 flex items-center gap-3">
+          <div className="h-px flex-1" style={{ background: C.line }} />
+          <span className="text-xs font-medium" style={{ ...fBody, color: C.inkSoft }}>or</span>
+          <div className="h-px flex-1" style={{ background: C.line }} />
+        </div>
+
+        <button
+          onClick={() => { showToast("Signed in with Google"); onAuthed("student"); }}
+          className="flex w-full items-center justify-center gap-2.5 rounded-2xl border py-3.5 text-sm font-semibold active:scale-[0.98] transition-transform"
+          style={{ ...fBody, borderColor: C.line, color: C.ink }}
+        >
+          <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.9 32.7 29.4 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4c-7.6 0-14.1 4.3-17.3 10.7z"/><path fill="#4CAF50" d="M24 44c5.4 0 10.3-1.9 14.1-5.1l-6.5-5.5C29.6 35.3 26.9 36 24 36c-5.3 0-9.8-3.3-11.4-8l-6.5 5C9.8 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.9 2.6-2.7 4.7-5 6.1l6.5 5.5C39.7 37 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+          Continue with Google
+        </button>
+
+        <button onClick={() => { showToast("Continuing as guest"); onAuthed("guest"); }} className="mt-4 w-full text-center text-[13px] font-semibold" style={{ ...fBody, color: C.primaryDark }}>
+          Continue as guest →
+        </button>
+      </div>
+
+      <div className="mt-6 flex items-center justify-center gap-1.5 text-[12px]" style={{ ..
