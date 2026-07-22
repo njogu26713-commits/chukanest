@@ -322,9 +322,11 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
 function AuthScreen({ onAuthed, showToast }) {
   const [mode, setMode] = useState("login");
   const [showPw, setShowPw] = useState(false);
-  return (
-    <div className="flex h-full flex-col px-6 pb-8 pt-14" style={{ background: `linear-gradient(180deg, ${C.primaryDark} 0%, ${C.primary} 45%, ${C.bg} 45%)` }}>
-      <div className="mb-8 flex flex-col items-center">
+
+  const formPanel = (
+    <div className="w-full max-w-sm mx-auto flex flex-col justify-center py-10 px-6 md:px-8">
+      {/* Mobile-only logo */}
+      <div className="mb-8 flex flex-col items-center md:hidden">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
           <Building2 size={30} color={C.primary} />
         </div>
@@ -332,7 +334,17 @@ function AuthScreen({ onAuthed, showToast }) {
         <div className="mt-1 text-[13px] font-medium text-white/85" style={fBody}>Verified student housing, zero scams.</div>
       </div>
 
-      <div className="mt-4 rounded-3xl p-5" style={{ background: C.surface, boxShadow: "0 10px 30px rgba(20,37,27,0.10)" }}>
+      <div className="rounded-3xl p-5 md:p-6" style={{ background: C.surface, boxShadow: "0 10px 40px rgba(20,37,27,0.12)" }}>
+        {/* Desktop-only heading inside form card */}
+        <div className="hidden md:block mb-6">
+          <div className="text-[22px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>
+            {mode === "login" ? "Welcome back" : "Create account"}
+          </div>
+          <div className="mt-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>
+            {mode === "login" ? "Sign in to your ChukaNest account" : "Join thousands of Chuka students"}
+          </div>
+        </div>
+
         <div className="mb-5 flex rounded-2xl p-1" style={{ background: C.mint }}>
           {["login", "signup"].map((m) => (
             <button
@@ -390,11 +402,81 @@ function AuthScreen({ onAuthed, showToast }) {
         </button>
       </div>
 
-      <div className="mt-6 flex items-center justify-center gap-1.5 text-[12px]" style={{ ...fBody, color: C.inkSoft }}>
+      <div className="mt-5 flex items-center justify-center gap-1.5 text-[12px]" style={{ ...fBody, color: C.inkSoft }}>
         <ShieldCheck size={12} />
         <span>Your data is safe with us · ChukaNest 2024</span>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* ── Mobile layout ── */}
+      <div
+        className="md:hidden flex h-full flex-col px-0 pb-0 pt-0"
+        style={{ background: `linear-gradient(180deg, ${C.primaryDark} 0%, ${C.primary} 40%, ${C.bg} 40%)` }}
+      >
+        {formPanel}
+      </div>
+
+      {/* ── Desktop layout: two columns ── */}
+      <div className="hidden md:flex h-full w-full">
+        {/* Left — branding hero */}
+        <div
+          className="flex flex-col justify-between p-12 w-[55%] shrink-0"
+          style={{ background: `linear-gradient(160deg, ${C.primaryDark} 0%, ${C.primaryLight} 100%)` }}
+        >
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <Building2 size={22} color="#fff" />
+            </div>
+            <span className="text-[20px] font-extrabold text-white" style={fDisplay}>ChukaNest</span>
+          </div>
+
+          {/* Hero text */}
+          <div>
+            <div className="text-[40px] font-extrabold text-white leading-tight mb-4" style={fDisplay}>
+              Find your home<br />near campus.
+            </div>
+            <div className="text-[15px] text-white/80 mb-10 leading-relaxed" style={fBody}>
+              Verified hostels, transparent pricing, and zero scams — built for Chuka University students.
+            </div>
+
+            {/* Feature bullets */}
+            <div className="space-y-3">
+              {[
+                { icon: ShieldCheck, text: "Every listing is verified by our team" },
+                { icon: Star, text: "Real reviews from fellow students" },
+                { icon: MapPin, text: "Distance from campus on every listing" },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl shrink-0" style={{ background: "rgba(255,255,255,0.15)" }}>
+                    <Icon size={15} color="#fff" />
+                  </div>
+                  <span className="text-[14px] text-white/90 font-medium" style={fBody}>{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Stat bar */}
+          <div className="flex gap-8">
+            {[["7+", "Verified hostels"], ["200+", "Student reviews"], ["0", "Scam reports"]].map(([val, label]) => (
+              <div key={label}>
+                <div className="text-[26px] font-extrabold text-white" style={fMono}>{val}</div>
+                <div className="text-[12px] text-white/70" style={fBody}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right — form */}
+        <div className="flex flex-1 items-center justify-center overflow-y-auto" style={{ background: C.bg }}>
+          {formPanel}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -1040,9 +1122,13 @@ export default function App() {
 
   if (!role) {
     return (
-      <div className="flex h-screen w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${C.primaryDark} 0%, ${C.primary} 100%)` }}>
+      <div className="h-screen w-full overflow-hidden" style={{ background: C.primaryDark }}>
         <Toast toast={toast} />
-        <div className="w-full max-w-sm h-screen md:h-auto md:max-h-[780px] overflow-y-auto md:rounded-3xl md:shadow-2xl" style={{ background: C.bg }}>
+        {/* Mobile: scrollable centered card  |  Desktop: full-height two-column */}
+        <div className="md:hidden h-full overflow-y-auto" style={{ background: `linear-gradient(180deg, ${C.primaryDark} 0%, ${C.primary} 40%, ${C.bg} 40%)` }}>
+          <AuthScreen onAuthed={(r) => setRole(r)} showToast={showToast} />
+        </div>
+        <div className="hidden md:block h-full">
           <AuthScreen onAuthed={(r) => setRole(r)} showToast={showToast} />
         </div>
       </div>
