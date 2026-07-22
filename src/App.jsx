@@ -277,7 +277,7 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
       style={{ background: C.surface, border: `1px solid ${C.line}`, boxShadow: "0 2px 10px rgba(20,37,27,0.05)" }}
     >
       <div className="relative">
-        <img src={hostel.images[0]} alt={hostel.name} className="h-40 w-full object-cover" />
+        <img src={hostel.images[0]} alt={hostel.name} className="w-full object-cover aspect-square" />
         <button
           onClick={(e) => { e.stopPropagation(); onToggleFav(hostel.id); }}
           className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full active:scale-90 transition-transform"
