@@ -7,6 +7,7 @@ import {
   SlidersHorizontal, ImagePlus, Building2, ArrowLeft, Eye, EyeOff, Flag, Clock,
   ThumbsUp, MoreVertical
 } from "lucide-react";
+import { api, saveAuth, loadAuth, clearAuth } from "./api.js";
 
 /* ---------------------------------- THEME ---------------------------------- */
 const C = {
@@ -31,7 +32,7 @@ const fDisplay = { fontFamily: "'Plus Jakarta Sans', sans-serif" };
 const fBody = { fontFamily: "'Inter', sans-serif" };
 const fMono = { fontFamily: "'Roboto Mono', monospace" };
 
-/* ---------------------------------- MOCK DATA ---------------------------------- */
+/* ---------------------------------- AMENITY META ---------------------------------- */
 const AMENITY_META = {
   wifi: { label: "Wi-Fi", icon: Wifi },
   water: { label: "Water 24/7", icon: Droplets },
@@ -42,128 +43,6 @@ const AMENITY_META = {
   study: { label: "Study Room", icon: BookOpen },
   cctv: { label: "CCTV", icon: Camera },
 };
-
-const img = (seed, w = 800, h = 600) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
-
-const HOSTELS = [
-  {
-    id: "h1", name: "Greenview Annex", gender: "Female", roomType: "Bedsitter",
-    price: 6500, distance: 0.4, rating: 4.7, reviewCount: 38, verified: true,
-    availableRooms: 3, landlord: "Mama Njeri", phone: "+254712345001",
-    images: [img("gv1"), img("gv2"), img("gv3")],
-    amenities: ["wifi", "water", "power", "security", "cctv"],
-    description: "A quiet, gated bedsitter block a 5-minute walk from the Chuka University main gate. Popular with second and third-year students for its reliable water supply and fast Wi-Fi.",
-    rules: ["No visitors after 10 PM", "No loud music after 9 PM", "Rent due by the 5th of each month", "No subletting rooms"],
-    latlng: [-0.3353, 37.6462],
-  },
-  {
-    id: "h2", name: "Chuka Scholars Lodge", gender: "Mixed", roomType: "Single",
-    price: 4800, distance: 0.9, rating: 4.3, reviewCount: 61, verified: true,
-    availableRooms: 6, landlord: "Mr. Kirimi", phone: "+254712345002",
-    images: [img("cs1"), img("cs2"), img("cs3")],
-    amenities: ["wifi", "water", "power", "study", "parking"],
-    description: "Budget-friendly single rooms with a shared study room, ideal for first-years. Close to matatu stage for easy access to town.",
-    rules: ["Visitors sign in at the gate", "Quiet hours 10 PM–6 AM", "Garbage collected daily by 7 AM"],
-    latlng: [-0.3248, 37.6578],
-  },
-  {
-    id: "h3", name: "Fig Tree Hostels", gender: "Male", roomType: "Shared",
-    price: 3500, distance: 1.6, rating: 4.0, reviewCount: 22, verified: false,
-    availableRooms: 2, landlord: "John Mutuma", phone: "+254712345003",
-    images: [img("ft1"), img("ft2"), img("ft3")],
-    amenities: ["water", "power", "parking"],
-    description: "Affordable shared rooms (2 per room) with basic amenities. A short boda ride from campus. Verification pending — proceed with normal caution and always view the room in person.",
-    rules: ["No overnight guests", "Shared kitchen cleaning roster enforced"],
-    latlng: [-0.3458, 37.6638],
-  },
-  {
-    id: "h4", name: "Riverside Girls Residence", gender: "Female", roomType: "Bedsitter",
-    price: 7200, distance: 0.6, rating: 4.9, reviewCount: 54, verified: true,
-    availableRooms: 1, landlord: "Mrs. Kaburu", phone: "+254712345004",
-    images: [img("rg1"), img("rg2"), img("rg3")],
-    amenities: ["wifi", "water", "power", "security", "cctv", "laundry"],
-    description: "Premium, fully-fenced residence exclusively for female students with 24-hour security and CCTV throughout the compound. Highly rated for safety.",
-    rules: ["Strictly female residents only", "Gate closes at 11 PM", "ID required for all visitors"],
-    latlng: [-0.3368, 37.6443],
-  },
-  {
-    id: "h5", name: "Unity Hostel", gender: "Mixed", roomType: "Single",
-    price: 5200, distance: 1.1, rating: 3.9, reviewCount: 17, verified: true,
-    availableRooms: 4, landlord: "Peter Ntongai", phone: "+254712345005",
-    images: [img("un1"), img("un2"), img("un3")],
-    amenities: ["wifi", "water", "power", "security"],
-    description: "Mid-range single rooms with dependable power backup during outages. Popular for its central location near the market.",
-    rules: ["No cooking in rooms after 9 PM", "Rent paid termly for 5% discount"],
-    latlng: [-0.3418, 37.6598],
-  },
-  {
-    id: "h6", name: "Cedar Court", gender: "Male", roomType: "Bedsitter",
-    price: 6000, distance: 2.0, rating: 4.4, reviewCount: 29, verified: false,
-    availableRooms: 5, landlord: "Alex Kithinji", phone: "+254712345006",
-    images: [img("cc1"), img("cc2"), img("cc3")],
-    amenities: ["wifi", "water", "power", "parking", "study"],
-    description: "Spacious bedsitters slightly further from campus, offering better value for money. Boda fare to campus averages KES 50.",
-    rules: ["No pets", "Parking for residents only"],
-    latlng: [-0.3148, 37.6678],
-  },
-  {
-    id: "h7", name: "Chuka Elite Suites", gender: "Mixed", roomType: "Single",
-    price: 8900, distance: 0.3, rating: 4.8, reviewCount: 45, verified: true,
-    availableRooms: 2, landlord: "Diana Gatwiri", phone: "+254712345007",
-    images: [img("ce1"), img("ce2"), img("ce3")],
-    amenities: ["wifi", "water", "power", "security", "cctv", "laundry", "study", "parking"],
-    description: "Top-tier furnished single rooms right opposite the main gate. All amenities included — the most fully-equipped listing on ChukaNest.",
-    rules: ["No loud music", "Visitors register at reception", "No smoking indoors"],
-    latlng: [-0.3292, 37.6518],
-  },
-];
-
-const INITIAL_REVIEWS = {
-  h1: [
-    { id: "r1", user: "Faith W.", rating: 5, text: "Water never runs out here, even during the dry season. Landlady is very responsive.", date: "2 weeks ago" },
-    { id: "r2", user: "Brenda K.", rating: 4, text: "Good value, though the walk feels longer at night without streetlights.", date: "1 month ago" },
-  ],
-  h2: [{ id: "r3", user: "Mike O.", rating: 4, text: "Great for first-years. The study room got noisy during exam week though.", date: "3 weeks ago" }],
-  h3: [{ id: "r4", user: "Dennis M.", rating: 3, text: "Cheap but the kitchen roster isn't really enforced.", date: "2 months ago" }],
-  h4: [
-    { id: "r5", user: "Purity N.", rating: 5, text: "Safest hostel I've lived in during my four years at Chuka. Worth every shilling.", date: "1 week ago" },
-    { id: "r6", user: "Anne M.", rating: 5, text: "CCTV and the gate guard genuinely make a difference for peace of mind.", date: "3 weeks ago" },
-  ],
-  h5: [{ id: "r7", user: "Collins R.", rating: 4, text: "Power backup saved my project deadline during the last blackout.", date: "1 month ago" }],
-  h6: [{ id: "r8", user: "Ian K.", rating: 4, text: "Bit far but boda guys at the stage know the place well.", date: "2 weeks ago" }],
-  h7: [{ id: "r9", user: "Sharon A.", rating: 5, text: "Feels like a small apartment. Pricey but you get everything included.", date: "5 days ago" }],
-};
-
-const PENDING_VERIFICATIONS = [
-  { id: "pv1", name: "Fig Tree Hostels", submitted: "2 days ago", landlord: "John Mutuma", phone: "+254712345003", rooms: 8, price: 3500, location: "1.6 km from campus" },
-  { id: "pv2", name: "Cedar Court", submitted: "5 days ago", landlord: "Alex Kithinji", phone: "+254712345006", rooms: 12, price: 6000, location: "2.0 km from campus" },
-  { id: "pv3", name: "Maple Annex (new)", submitted: "Today", landlord: "Grace Muthoni", phone: "+254799001122", rooms: 5, price: 5500, location: "0.7 km from campus" },
-];
-
-const FLAGGED_REVIEWS = [
-  { id: "fr1", hostel: "Unity Hostel", user: "Anonymous123", text: "Contains a suspicious external phone number and payment request outside the app.", flaggedBy: "System", date: "Today" },
-  { id: "fr2", hostel: "Fig Tree Hostels", user: "user_882", text: "Reported by 3 students as potentially fake / competitor review.", flaggedBy: "3 students", date: "Yesterday" },
-  { id: "fr3", hostel: "Chuka Scholars Lodge", user: "anon_55", text: "This review looks copied word-for-word from another listing.", flaggedBy: "System", date: "3 days ago" },
-];
-
-const ADMIN_USERS = [
-  { id: "u1", name: "Faith Wanjiru", email: "faith@students.chuka.ac.ke", role: "student", joined: "Jan 2024", bookmarks: 4, status: "active" },
-  { id: "u2", name: "Mike Otieno", email: "mike@students.chuka.ac.ke", role: "student", joined: "Feb 2024", bookmarks: 2, status: "active" },
-  { id: "u3", name: "Purity Nthiga", email: "purity@students.chuka.ac.ke", role: "student", joined: "Sep 2023", bookmarks: 7, status: "active" },
-  { id: "u4", name: "Collins Ruto", email: "collins@students.chuka.ac.ke", role: "student", joined: "Sep 2023", bookmarks: 1, status: "active" },
-  { id: "u5", name: "Anonymous123", email: "anon123@mail.com", role: "student", joined: "Mar 2024", bookmarks: 0, status: "flagged" },
-  { id: "u6", name: "Sharon Atieno", email: "sharon@students.chuka.ac.ke", role: "student", joined: "Jan 2024", bookmarks: 3, status: "active" },
-  { id: "u7", name: "Admin User", email: "admin@chunanest.co.ke", role: "admin", joined: "Jan 2023", bookmarks: 0, status: "active" },
-];
-
-const MONTHLY_ENQUIRIES = [
-  { month: "Feb", count: 18 },
-  { month: "Mar", count: 27 },
-  { month: "Apr", count: 35 },
-  { month: "May", count: 52 },
-  { month: "Jun", count: 44 },
-  { month: "Jul", count: 61 },
-];
 
 /* ---------------------------------- SMALL UI PRIMITIVES ---------------------------------- */
 
@@ -342,7 +221,36 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
 function AuthScreen({ onAuthed, showToast }) {
   const [mode, setMode] = useState("login");
   const [showPw, setShowPw] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    setError("");
+    if (!email.trim() || !password.trim()) {
+      setError("Please fill in all fields");
+      return;
+    }
+    if (mode === "signup" && !name.trim()) {
+      setError("Please enter your name");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = mode === "login"
+        ? await api.login(email.trim(), password)
+        : await api.signup(name.trim(), email.trim(), password);
+      saveAuth(result.token, result.user);
+      showToast(result.user.role === "admin" ? "Welcome, Admin 👋" : mode === "login" ? "Welcome back! 🎉" : "Account created — welcome to ChukaNest!");
+      onAuthed(result.user.role, result.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formPanel = (
     <div className="w-full max-w-sm mx-auto flex flex-col justify-center py-10 px-6 md:px-8">
@@ -370,7 +278,7 @@ function AuthScreen({ onAuthed, showToast }) {
           {["login", "signup"].map((m) => (
             <button
               key={m}
-              onClick={() => setMode(m)}
+              onClick={() => { setMode(m); setError(""); }}
               className="flex-1 rounded-xl py-2 text-sm font-semibold transition-all"
               style={{ ...fBody, background: mode === m ? C.surface : "transparent", color: mode === m ? C.primaryDark : C.inkSoft, boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}
             >
@@ -383,7 +291,7 @@ function AuthScreen({ onAuthed, showToast }) {
           {mode === "signup" && (
             <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
               <User size={16} color={C.inkSoft} />
-              <input placeholder="Full name" className="w-full bg-transparent text-sm outline-none" style={fBody} />
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className="w-full bg-transparent text-sm outline-none" style={fBody} />
             </div>
           )}
           <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
@@ -392,37 +300,39 @@ function AuthScreen({ onAuthed, showToast }) {
           </div>
           <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
             <Lock size={16} color={C.inkSoft} />
-            <input type={showPw ? "text" : "password"} placeholder="Password" className="w-full bg-transparent text-sm outline-none" style={fBody} />
+            <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full bg-transparent text-sm outline-none" style={fBody} onKeyDown={(e) => e.key === "Enter" && handleSubmit()} />
             <button onClick={() => setShowPw((s) => !s)}>{showPw ? <EyeOff size={16} color={C.inkSoft} /> : <Eye size={16} color={C.inkSoft} />}</button>
           </div>
         </div>
 
+        {error && (
+          <div className="mt-3 rounded-xl px-3 py-2 text-[12px] font-medium" style={{ background: C.dangerSoft, color: C.danger, ...fBody }}>
+            {error}
+          </div>
+        )}
+
         <div className="mt-5">
-          <PrimaryButton full onClick={() => {
-            const isAdmin = email.trim().toLowerCase() === "admin@chukanest.co.ke";
-            showToast(isAdmin ? "Welcome, Admin 👋" : mode === "login" ? "Welcome back! 🎉" : "Account created — welcome to ChukaNest!");
-            onAuthed(isAdmin ? "admin" : "student");
-          }}>
-            {mode === "login" ? "Log In" : "Create Account"}
+          <PrimaryButton full onClick={handleSubmit} disabled={loading}>
+            {loading ? "Please wait…" : mode === "login" ? "Log In" : "Create Account"}
           </PrimaryButton>
         </div>
 
         <div className="my-4 flex items-center gap-3">
           <div className="h-px flex-1" style={{ background: C.line }} />
-          <span className="text-xs font-medium" style={{ ...fBody, color: C.inkSoft }}>or</span>
+          <span className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>demo accounts</span>
           <div className="h-px flex-1" style={{ background: C.line }} />
         </div>
 
-        <button
-          onClick={() => { showToast("Signed in with Google"); onAuthed("student"); }}
-          className="flex w-full items-center justify-center gap-2.5 rounded-2xl border py-3.5 text-sm font-semibold active:scale-[0.98] transition-transform"
-          style={{ ...fBody, borderColor: C.line, color: C.ink }}
-        >
-          <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.9 32.7 29.4 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4c-7.6 0-14.1 4.3-17.3 10.7z"/><path fill="#4CAF50" d="M24 44c5.4 0 10.3-1.9 14.1-5.1l-6.5-5.5C29.6 35.3 26.9 36 24 36c-5.3 0-9.8-3.3-11.4-8l-6.5 5C9.8 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.9 2.6-2.7 4.7-5 6.1l6.5 5.5C39.7 37 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
-          Continue with Google
-        </button>
+        <div className="space-y-2 text-[11px]" style={{ ...fBody, color: C.inkSoft }}>
+          <div className="rounded-xl px-3 py-2" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+            <span className="font-semibold">Admin:</span> admin@chukanest.co.ke / Admin1234!
+          </div>
+          <div className="rounded-xl px-3 py-2" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+            <span className="font-semibold">Student:</span> faith@students.chuka.ac.ke / Student123!
+          </div>
+        </div>
 
-        <button onClick={() => { showToast("Continuing as guest"); onAuthed("guest"); }} className="mt-4 w-full text-center text-[13px] font-semibold" style={{ ...fBody, color: C.primaryDark }}>
+        <button onClick={() => { showToast("Continuing as guest"); onAuthed("guest", null); }} className="mt-4 w-full text-center text-[13px] font-semibold" style={{ ...fBody, color: C.primaryDark }}>
           Continue as guest →
         </button>
       </div>
@@ -605,18 +515,36 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast }) {
 
 /* ---------------------------------- DETAIL SCREEN ---------------------------------- */
 
-function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onAddReview, showToast }) {
+function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadReviews, onAddReview, showToast, currentUser }) {
   const [imgIdx, setImgIdx] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
   const [tab, setTab] = useState("about");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmitReview = () => {
+  // Load reviews when switching to reviews tab
+  useEffect(() => {
+    if (tab === "reviews" && !reviews) {
+      onLoadReviews(hostel.id);
+    }
+  }, [tab]);
+
+  const handleSubmitReview = async () => {
     if (!reviewText.trim()) return;
-    onAddReview(hostel.id, { id: `r${Date.now()}`, user: "You", rating: reviewRating, text: reviewText, date: "Just now" });
-    setReviewText("");
-    showToast("Review submitted!");
+    if (!currentUser) { showToast("Please log in to leave a review"); return; }
+    setSubmitting(true);
+    try {
+      await onAddReview(hostel.id, { rating: reviewRating, text: reviewText });
+      setReviewText("");
+      showToast("Review submitted!");
+    } catch (err) {
+      showToast("Failed to submit review");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const hostelReviews = reviews || [];
 
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
@@ -740,17 +668,19 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onAddReview
           {tab === "reviews" && (
             <div>
               <div className="space-y-3 mb-5">
-                {(reviews[hostel.id] || []).map((r) => (
+                {hostelReviews.map((r) => (
                   <div key={r.id} className="rounded-2xl p-3.5" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[13px] font-semibold" style={{ ...fBody, color: C.ink }}>{r.user}</span>
-                      <span className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>{r.date}</span>
+                      <span className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>
+                        {r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "short" }) : ""}
+                      </span>
                     </div>
                     <StarRow rating={r.rating} size={11} />
                     <p className="mt-1.5 text-[13px] leading-relaxed" style={{ ...fBody, color: C.ink }}>{r.text}</p>
                   </div>
                 ))}
-                {!(reviews[hostel.id] || []).length && (
+                {hostelReviews.length === 0 && (
                   <div className="py-6 text-center text-[13px]" style={{ ...fBody, color: C.inkSoft }}>No reviews yet. Be the first!</div>
                 )}
               </div>
@@ -767,7 +697,9 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onAddReview
                   style={{ ...fBody, background: C.bg, border: `1px solid ${C.line}`, color: C.ink }}
                 />
                 <div className="mt-2">
-                  <PrimaryButton onClick={handleSubmitReview} disabled={!reviewText.trim()}>Submit Review</PrimaryButton>
+                  <PrimaryButton onClick={handleSubmitReview} disabled={!reviewText.trim() || submitting}>
+                    {submitting ? "Submitting…" : "Submit Review"}
+                  </PrimaryButton>
                 </div>
               </div>
             </div>
@@ -831,7 +763,7 @@ function MapScreen({ hostels, onOpen }) {
       maxZoom: 19,
     }).addTo(map);
 
-    // University marker — main anchor
+    // University marker
     const uniIcon = L.divIcon({
       className: "",
       html: `<div style="display:flex;flex-direction:column;align-items:center;">
@@ -844,8 +776,8 @@ function MapScreen({ hostels, onOpen }) {
     });
     L.marker(CHUKA_UNIVERSITY, { icon: uniIcon }).addTo(map);
 
-    // Hostel markers + click handlers
     hostels.forEach((h) => {
+      if (!h.latlng || h.latlng.length < 2) return;
       const icon = L.divIcon({
         className: "",
         html: `<div style="background:${h.verified ? C.primary : C.inkSoft};color:#fff;font-family:'Roboto Mono',monospace;font-size:11px;font-weight:700;padding:5px 9px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.22);cursor:pointer;">KES ${(h.price / 1000).toFixed(1)}k</div>`,
@@ -855,13 +787,12 @@ function MapScreen({ hostels, onOpen }) {
       marker.on("click", () => setSelected(h.id));
     });
 
-    // Fit to all points first
-    const allPoints = [CHUKA_UNIVERSITY, ...hostels.map((h) => h.latlng)];
+    const allPoints = [CHUKA_UNIVERSITY, ...hostels.filter(h => h.latlng?.length >= 2).map((h) => h.latlng)];
     map.fitBounds(allPoints, { padding: [48, 48] });
 
-    // Fetch & draw road routes from university to each hostel
     const [uLat, uLon] = CHUKA_UNIVERSITY;
     hostels.forEach((h) => {
+      if (!h.latlng || h.latlng.length < 2) return;
       const [hLat, hLon] = h.latlng;
       const url = `https://router.project-osrm.org/route/v1/driving/${uLon},${uLat};${hLon},${hLat}?overview=full&geometries=geojson`;
       fetch(url)
@@ -870,13 +801,8 @@ function MapScreen({ hostels, onOpen }) {
           if (!mapInstanceRef.current) return;
           const coords = data?.routes?.[0]?.geometry?.coordinates;
           if (!coords) return;
-          // OSRM returns [lon, lat]; Leaflet needs [lat, lon]
           const latLngs = coords.map(([lon, lat]) => [lat, lon]);
-          L.polyline(latLngs, {
-            color: "#3B82F6",
-            weight: 4,
-            opacity: 0.75,
-          }).addTo(mapInstanceRef.current);
+          L.polyline(latLngs, { color: "#3B82F6", weight: 4, opacity: 0.75 }).addTo(mapInstanceRef.current);
         })
         .catch(() => {});
     });
@@ -886,13 +812,12 @@ function MapScreen({ hostels, onOpen }) {
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, []);
+  }, [hostels]);
 
-  // Pan to selected hostel
   useEffect(() => {
     if (!selected || !mapInstanceRef.current) return;
     const h = hostels.find((x) => x.id === selected);
-    if (h) mapInstanceRef.current.panTo(h.latlng, { animate: true });
+    if (h?.latlng) mapInstanceRef.current.panTo(h.latlng, { animate: true });
   }, [selected]);
 
   const selectedHostel = hostels.find((h) => h.id === selected);
@@ -904,7 +829,6 @@ function MapScreen({ hostels, onOpen }) {
         <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
       </div>
 
-      {/* Bottom sheet: selected hostel or horizontal list */}
       {selectedHostel ? (
         <div className="px-4 py-3 pb-24 md:pb-4" style={{ background: C.surface, borderTop: `1px solid ${C.line}` }}>
           <div className="flex gap-3 items-center">
@@ -944,7 +868,7 @@ function MapScreen({ hostels, onOpen }) {
 
 /* ---------------------------------- PROFILE SCREEN ---------------------------------- */
 
-function ProfileScreen({ role, onLogout, showToast }) {
+function ProfileScreen({ role, currentUser, onLogout, showToast }) {
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
       <TopBar title="My Profile" />
@@ -954,9 +878,15 @@ function ProfileScreen({ role, onLogout, showToast }) {
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl mb-3" style={{ background: C.mint }}>
             <User size={30} color={C.primaryDark} />
           </div>
-          <div className="text-[17px] font-bold" style={{ ...fDisplay, color: C.ink }}>Student User</div>
-          <div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>you@students.chuka.ac.ke</div>
-          <Badge tone="neutral" className="mt-2">{role === "admin" ? "Admin" : "Student"}</Badge>
+          <div className="text-[17px] font-bold" style={{ ...fDisplay, color: C.ink }}>
+            {currentUser?.name || "Guest"}
+          </div>
+          <div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>
+            {currentUser?.email || "Not signed in"}
+          </div>
+          <div className="mt-2">
+            <Badge tone="neutral">{role === "admin" ? "Admin" : role === "guest" ? "Guest" : "Student"}</Badge>
+          </div>
         </div>
 
         {/* Menu items */}
@@ -999,22 +929,60 @@ function ProfileScreen({ role, onLogout, showToast }) {
 
 function AdminScreen({ showToast }) {
   const [activeTab, setActiveTab] = useState("overview");
-  const [verifications, setVerifications] = useState(PENDING_VERIFICATIONS);
-  const [flagged, setFlagged] = useState(FLAGGED_REVIEWS);
-  const [listings, setListings] = useState(HOSTELS);
-  const [users, setUsers] = useState(ADMIN_USERS);
+  const [listings, setListings] = useState([]);
+  const [pendingVerifications, setPendingVerifications] = useState([]);
+  const [flagged, setFlagged] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [active, pending, flaggedRevs, userList] = await Promise.all([
+          api.getHostels(),
+          api.getHostels("pending"),
+          api.getFlaggedReviews(),
+          api.getUsers(),
+        ]);
+        setListings(active);
+        setPendingVerifications(pending);
+        setFlagged(flaggedRevs);
+        setUsers(userList);
+      } catch (err) {
+        showToast("Failed to load admin data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const verifiedCount = listings.filter((h) => h.verified).length;
   const totalRooms = listings.reduce((s, h) => s + h.availableRooms, 0);
+
+  // Dummy enquiry data for chart (would be real in a full analytics implementation)
+  const MONTHLY_ENQUIRIES = [
+    { month: "Feb", count: 18 }, { month: "Mar", count: 27 },
+    { month: "Apr", count: 35 }, { month: "May", count: 52 },
+    { month: "Jun", count: 44 }, { month: "Jul", count: 61 },
+  ];
   const maxEnquiry = Math.max(...MONTHLY_ENQUIRIES.map((m) => m.count));
 
   const TABS = [
-    { id: "overview",      label: "Overview",      icon: LayoutDashboard },
-    { id: "listings",      label: "Listings",      icon: Building2 },
-    { id: "users",         label: "Users",         icon: Users },
-    { id: "verifications", label: "Verify",        icon: Clock, badge: verifications.length },
-    { id: "flagged",       label: "Flagged",       icon: Flag, badge: flagged.length },
+    { id: "overview",      label: "Overview",  icon: LayoutDashboard },
+    { id: "listings",      label: "Listings",  icon: Building2 },
+    { id: "users",         label: "Users",     icon: Users },
+    { id: "verifications", label: "Verify",    icon: Clock, badge: pendingVerifications.length },
+    { id: "flagged",       label: "Flagged",   icon: Flag, badge: flagged.length },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center" style={{ background: C.bg }}>
+        <div className="text-[14px]" style={{ ...fBody, color: C.inkSoft }}>Loading…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
@@ -1022,7 +990,7 @@ function AdminScreen({ showToast }) {
       <div className="px-4 pt-4 pb-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${C.line}` }}>
         <div>
           <div className="text-[18px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>Admin Dashboard</div>
-          <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>ChukaNest · July 2024</div>
+          <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>ChukaNest · {new Date().toLocaleString("en-US", { month: "long", year: "numeric" })}</div>
         </div>
         <Badge tone="gold">Admin</Badge>
       </div>
@@ -1055,7 +1023,6 @@ function AdminScreen({ showToast }) {
         {/* ── OVERVIEW ── */}
         {activeTab === "overview" && (
           <div className="px-4 py-4 space-y-5">
-            {/* Stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { label: "Total Listings", value: listings.length, icon: Building2, color: C.primary },
@@ -1092,11 +1059,11 @@ function AdminScreen({ showToast }) {
             {/* Quick alerts */}
             <div className="space-y-2">
               <div className="text-[13px] font-bold mb-1" style={{ ...fDisplay, color: C.ink }}>Needs Attention</div>
-              {verifications.length > 0 && (
+              {pendingVerifications.length > 0 && (
                 <button onClick={() => setActiveTab("verifications")} className="w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" style={{ background: C.goldSoft, border: `1px solid ${C.gold}40` }}>
                   <Clock size={18} color={C.gold} />
                   <div className="flex-1">
-                    <div className="text-[13px] font-semibold" style={{ ...fBody, color: C.ink }}>{verifications.length} pending verifications</div>
+                    <div className="text-[13px] font-semibold" style={{ ...fBody, color: C.ink }}>{pendingVerifications.length} pending verifications</div>
                     <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Review and approve new listings</div>
                   </div>
                   <ChevronRight size={16} color={C.inkSoft} />
@@ -1112,7 +1079,7 @@ function AdminScreen({ showToast }) {
                   <ChevronRight size={16} color={C.inkSoft} />
                 </button>
               )}
-              {verifications.length === 0 && flagged.length === 0 && (
+              {pendingVerifications.length === 0 && flagged.length === 0 && (
                 <div className="flex items-center gap-3 rounded-2xl p-3.5" style={{ background: C.mint }}>
                   <CheckCircle2 size={18} color={C.primary} />
                   <div className="text-[13px] font-semibold" style={{ ...fBody, color: C.primary }}>Everything looks good — no pending actions</div>
@@ -1135,7 +1102,7 @@ function AdminScreen({ showToast }) {
                   <div className="flex-1 text-[13px]" style={{ ...fBody, color: C.ink }}>{label}</div>
                   <div className="text-[13px] font-bold" style={{ ...fMono, color: C.ink }}>{count}</div>
                   <div className="w-24 h-2 rounded-full overflow-hidden" style={{ background: C.line }}>
-                    <div className="h-full rounded-full" style={{ width: `${(count / listings.length) * 100}%`, background: color }} />
+                    <div className="h-full rounded-full" style={{ width: listings.length ? `${(count / listings.length) * 100}%` : "0%", background: color }} />
                   </div>
                 </div>
               ))}
@@ -1174,7 +1141,13 @@ function AdminScreen({ showToast }) {
                   </button>
                   {!h.verified && (
                     <button
-                      onClick={() => { setListings((l) => l.map((x) => x.id === h.id ? { ...x, verified: true } : x)); showToast(`${h.name} verified ✓`); }}
+                      onClick={async () => {
+                        try {
+                          await api.updateHostel(h.id, { verified: true });
+                          setListings((l) => l.map((x) => x.id === h.id ? { ...x, verified: true } : x));
+                          showToast(`${h.name} verified ✓`);
+                        } catch { showToast("Failed to verify"); }
+                      }}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold border-l"
                       style={{ ...fBody, color: C.primary, borderColor: C.line }}
                     >
@@ -1182,7 +1155,13 @@ function AdminScreen({ showToast }) {
                     </button>
                   )}
                   <button
-                    onClick={() => { setListings((l) => l.filter((x) => x.id !== h.id)); showToast("Listing removed"); }}
+                    onClick={async () => {
+                      try {
+                        await api.deleteHostel(h.id);
+                        setListings((l) => l.filter((x) => x.id !== h.id));
+                        showToast("Listing removed");
+                      } catch { showToast("Failed to remove"); }
+                    }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold border-l"
                     style={{ ...fBody, color: C.danger, borderColor: C.line }}
                   >
@@ -1200,7 +1179,6 @@ function AdminScreen({ showToast }) {
             <div className="text-[13px] mb-3" style={{ ...fBody, color: C.inkSoft }}>{users.length} registered accounts</div>
             {users.map((u) => (
               <div key={u.id} className="flex items-center gap-3 rounded-2xl p-3.5" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
-                {/* Avatar */}
                 <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[15px] font-bold" style={{ background: u.status === "flagged" ? C.dangerSoft : C.mint, color: u.status === "flagged" ? C.danger : C.primary }}>
                   {u.name.charAt(0)}
                 </div>
@@ -1209,13 +1187,27 @@ function AdminScreen({ showToast }) {
                     <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{u.name}</div>
                     {u.role === "admin" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.goldSoft, color: C.gold }}>Admin</span>}
                     {u.status === "flagged" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.dangerSoft, color: C.danger }}>Flagged</span>}
+                    {u.status === "suspended" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.dangerSoft, color: C.danger }}>Suspended</span>}
                   </div>
                   <div className="text-[11px] truncate" style={{ ...fBody, color: C.inkSoft }}>{u.email}</div>
                   <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Joined {u.joined} · {u.bookmarks} saved</div>
                 </div>
-                <button onClick={() => showToast(`${u.name} suspended`)} className="shrink-0 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold" style={{ ...fBody, background: C.dangerSoft, color: C.danger }}>
-                  Suspend
-                </button>
+                {u.role !== "admin" && (
+                  <button
+                    onClick={async () => {
+                      const newStatus = u.status === "suspended" ? "active" : "suspended";
+                      try {
+                        await api.updateUser(u.id, { status: newStatus });
+                        setUsers((us) => us.map((x) => x.id === u.id ? { ...x, status: newStatus } : x));
+                        showToast(`${u.name} ${newStatus === "suspended" ? "suspended" : "reactivated"}`);
+                      } catch { showToast("Action failed"); }
+                    }}
+                    className="shrink-0 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold"
+                    style={{ ...fBody, background: C.dangerSoft, color: C.danger }}
+                  >
+                    {u.status === "suspended" ? "Reactivate" : "Suspend"}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -1224,13 +1216,13 @@ function AdminScreen({ showToast }) {
         {/* ── VERIFICATIONS ── */}
         {activeTab === "verifications" && (
           <div className="px-4 py-4 space-y-3">
-            {verifications.length === 0 ? (
+            {pendingVerifications.length === 0 ? (
               <div className="flex flex-col items-center py-20">
                 <CheckCircle2 size={44} color={C.primary} />
                 <div className="mt-3 text-[15px] font-semibold" style={{ ...fDisplay, color: C.inkSoft }}>All caught up!</div>
                 <div className="text-[13px] mt-1" style={{ ...fBody, color: C.inkSoft }}>No pending verifications</div>
               </div>
-            ) : verifications.map((v) => (
+            ) : pendingVerifications.map((v) => (
               <div key={v.id} className="rounded-2xl overflow-hidden" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-3">
@@ -1242,9 +1234,9 @@ function AdminScreen({ showToast }) {
                   </div>
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
-                      { label: "Rooms", value: v.rooms },
-                      { label: "Price/mo", value: `KES ${v.price.toLocaleString()}` },
-                      { label: "Distance", value: v.location.split(" ")[0] + " km" },
+                      { label: "Rooms", value: v.availableRooms },
+                      { label: "Price/mo", value: `KES ${v.price?.toLocaleString()}` },
+                      { label: "Distance", value: `${v.distance} km` },
                     ].map(({ label, value }) => (
                       <div key={label} className="rounded-xl p-2 text-center" style={{ background: C.bg }}>
                         <div className="text-[12px] font-bold" style={{ ...fMono, color: C.ink }}>{value}</div>
@@ -1252,18 +1244,33 @@ function AdminScreen({ showToast }) {
                       </div>
                     ))}
                   </div>
-                  <div className="text-[11px] mb-3" style={{ ...fBody, color: C.inkSoft }}>Submitted {v.submitted}</div>
+                  <div className="text-[11px] mb-3" style={{ ...fBody, color: C.inkSoft }}>
+                    Submitted {v.createdAt ? new Date(v.createdAt).toLocaleDateString("en-KE") : "recently"}
+                  </div>
                 </div>
                 <div className="flex border-t" style={{ borderColor: C.line }}>
                   <button
-                    onClick={() => { setVerifications((vs) => vs.filter((x) => x.id !== v.id)); showToast(`${v.name} verified ✓`); }}
+                    onClick={async () => {
+                      try {
+                        await api.updateHostel(v.id, { status: "active", verified: true });
+                        setPendingVerifications((vs) => vs.filter((x) => x.id !== v.id));
+                        setListings((l) => [...l, { ...v, status: "active", verified: true }]);
+                        showToast(`${v.name} verified ✓`);
+                      } catch { showToast("Failed to approve"); }
+                    }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold"
                     style={{ ...fBody, color: C.primary }}
                   >
                     <Check size={15} /> Approve
                   </button>
                   <button
-                    onClick={() => { setVerifications((vs) => vs.filter((x) => x.id !== v.id)); showToast("Verification rejected"); }}
+                    onClick={async () => {
+                      try {
+                        await api.updateHostel(v.id, { status: "rejected" });
+                        setPendingVerifications((vs) => vs.filter((x) => x.id !== v.id));
+                        showToast("Verification rejected");
+                      } catch { showToast("Failed to reject"); }
+                    }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold border-l"
                     style={{ ...fBody, color: C.danger, borderColor: C.line }}
                   >
@@ -1295,14 +1302,26 @@ function AdminScreen({ showToast }) {
                 </div>
                 <div className="flex border-t" style={{ borderColor: C.line }}>
                   <button
-                    onClick={() => { setFlagged((fl) => fl.filter((x) => x.id !== f.id)); showToast("Review cleared — kept"); }}
+                    onClick={async () => {
+                      try {
+                        await api.moderateReview(f.id, "keep");
+                        setFlagged((fl) => fl.filter((x) => x.id !== f.id));
+                        showToast("Review cleared — kept");
+                      } catch { showToast("Action failed"); }
+                    }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold"
                     style={{ ...fBody, color: C.primary }}
                   >
                     <ThumbsUp size={15} /> Keep
                   </button>
                   <button
-                    onClick={() => { setFlagged((fl) => fl.filter((x) => x.id !== f.id)); showToast("Review removed"); }}
+                    onClick={async () => {
+                      try {
+                        await api.moderateReview(f.id, "remove");
+                        setFlagged((fl) => fl.filter((x) => x.id !== f.id));
+                        showToast("Review removed");
+                      } catch { showToast("Action failed"); }
+                    }}
                     className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold border-l"
                     style={{ ...fBody, color: C.danger, borderColor: C.line }}
                   >
@@ -1318,7 +1337,7 @@ function AdminScreen({ showToast }) {
   );
 }
 
-/* ---------------------------------- NAV (bottom mobile / sidebar desktop) ---------------------------------- */
+/* ---------------------------------- NAV ---------------------------------- */
 
 function AppNav({ tab, setTab, role }) {
   const tabs = [
@@ -1357,7 +1376,6 @@ function AppNav({ tab, setTab, role }) {
         className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 py-6 px-3"
         style={{ width: 220, background: C.surface, borderRight: `1px solid ${C.line}`, zIndex: 30 }}
       >
-        {/* Logo */}
         <div className="flex items-center gap-2.5 px-3 mb-8">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0" style={{ background: C.primary }}>
             <Building2 size={18} color="#fff" />
@@ -1394,12 +1412,15 @@ function AppNav({ tab, setTab, role }) {
 /* ---------------------------------- APP ROOT ---------------------------------- */
 
 export default function App() {
-  const [role, setRole] = useState(null); // null = auth screen
+  const [role, setRole] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [tab, setTab] = useState("home");
   const [openHostelId, setOpenHostelId] = useState(null);
-  const [favs, setFavs] = useState(new Set(["h4", "h7"]));
-  const [reviews, setReviews] = useState(INITIAL_REVIEWS);
+  const [hostels, setHostels] = useState([]);
+  const [favs, setFavs] = useState(new Set());
+  const [reviews, setReviews] = useState({}); // { hostelId: Review[] }
   const [toast, setToast] = useState(null);
+  const [hostelLoading, setHostelLoading] = useState(true);
   const toastRef = useRef(null);
 
   // Inject Google Fonts
@@ -1410,37 +1431,109 @@ export default function App() {
     return () => document.head.removeChild(style);
   }, []);
 
+  // Restore auth from localStorage on mount
+  useEffect(() => {
+    const saved = loadAuth();
+    if (saved) {
+      setRole(saved.user.role);
+      setCurrentUser(saved.user);
+    }
+  }, []);
+
+  // Fetch hostels when authenticated
+  useEffect(() => {
+    if (role === null) return; // not yet authed
+    setHostelLoading(true);
+    api.getHostels()
+      .then((data) => setHostels(data))
+      .catch(() => showToast("Failed to load hostels"))
+      .finally(() => setHostelLoading(false));
+
+    // Load bookmarks for logged-in users
+    if (role !== "guest") {
+      api.getBookmarks()
+        .then((bookmarked) => setFavs(new Set(bookmarked.map((h) => h._id || h.id))))
+        .catch(() => {});
+    }
+  }, [role]);
+
   const showToast = (msg) => {
     setToast(msg);
     clearTimeout(toastRef.current);
     toastRef.current = setTimeout(() => setToast(null), 2500);
   };
 
-  const toggleFav = (id) => {
+  const handleAuthed = (userRole, user) => {
+    setRole(userRole);
+    setCurrentUser(user);
+    setTab("home");
+  };
+
+  const handleLogout = () => {
+    clearAuth();
+    setRole(null);
+    setCurrentUser(null);
+    setTab("home");
+    setHostels([]);
+    setFavs(new Set());
+    setReviews({});
+    setOpenHostelId(null);
+    showToast("Logged out");
+  };
+
+  const toggleFav = async (hostelId) => {
+    if (role === "guest") { showToast("Please log in to save hostels"); return; }
+    // Optimistic update
     setFavs((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); showToast("Removed from saved"); }
-      else { next.add(id); showToast("Saved!"); }
+      if (next.has(hostelId)) { next.delete(hostelId); showToast("Removed from saved"); }
+      else { next.add(hostelId); showToast("Saved!"); }
       return next;
     });
+    try {
+      await api.toggleBookmark(hostelId);
+    } catch {
+      // Revert on failure
+      setFavs((prev) => {
+        const next = new Set(prev);
+        if (next.has(hostelId)) next.delete(hostelId);
+        else next.add(hostelId);
+        return next;
+      });
+      showToast("Failed to update saved");
+    }
   };
 
-  const addReview = (hostelId, review) => {
-    setReviews((prev) => ({ ...prev, [hostelId]: [review, ...(prev[hostelId] || [])] }));
+  const loadReviews = async (hostelId) => {
+    try {
+      const data = await api.getReviews(hostelId);
+      setReviews((prev) => ({ ...prev, [hostelId]: data }));
+    } catch {
+      showToast("Failed to load reviews");
+    }
   };
 
-  const openHostel = HOSTELS.find((h) => h.id === openHostelId);
+  const addReview = async (hostelId, reviewData) => {
+    const newReview = await api.addReview(hostelId, reviewData);
+    setReviews((prev) => ({ ...prev, [hostelId]: [newReview, ...(prev[hostelId] || [])] }));
+    // Refresh hostel to get updated rating
+    try {
+      const updated = await api.getHostel(hostelId);
+      setHostels((prev) => prev.map((h) => h.id === hostelId ? { ...updated, id: updated._id || updated.id } : h));
+    } catch {}
+  };
+
+  const openHostel = hostels.find((h) => h.id === openHostelId);
 
   if (!role) {
     return (
       <div className="h-screen w-full overflow-hidden" style={{ background: C.primaryDark }}>
         <Toast toast={toast} />
-        {/* Mobile: scrollable centered card  |  Desktop: full-height two-column */}
         <div className="md:hidden h-full overflow-y-auto" style={{ background: `linear-gradient(180deg, ${C.primaryDark} 0%, ${C.primary} 40%, ${C.bg} 40%)` }}>
-          <AuthScreen onAuthed={(r) => setRole(r)} showToast={showToast} />
+          <AuthScreen onAuthed={handleAuthed} showToast={showToast} />
         </div>
         <div className="hidden md:block h-full">
-          <AuthScreen onAuthed={(r) => setRole(r)} showToast={showToast} />
+          <AuthScreen onAuthed={handleAuthed} showToast={showToast} />
         </div>
       </div>
     );
@@ -1450,7 +1543,6 @@ export default function App() {
     <div className="flex h-screen w-full overflow-hidden" style={{ background: C.bg }}>
       <Toast toast={toast} />
       <AppNav tab={tab} setTab={setTab} role={role} />
-      {/* Content shifts right on desktop to make room for the sidebar */}
       <div className="flex-1 overflow-hidden md:ml-[220px]">
         {openHostel ? (
           <DetailScreen
@@ -1458,17 +1550,27 @@ export default function App() {
             isFav={favs.has(openHostel.id)}
             onToggleFav={toggleFav}
             onBack={() => setOpenHostelId(null)}
-            reviews={reviews}
+            reviews={reviews[openHostel.id]}
+            onLoadReviews={loadReviews}
             onAddReview={addReview}
             showToast={showToast}
+            currentUser={currentUser}
           />
         ) : (
           <div className="h-full">
-            {tab === "home" && <HomeScreen hostels={HOSTELS} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} />}
-            {tab === "map" && <MapScreen hostels={HOSTELS} onOpen={(id) => { setOpenHostelId(id); }} />}
-            {tab === "favs" && <FavouritesScreen hostels={HOSTELS} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} />}
+            {tab === "home" && (
+              hostelLoading ? (
+                <div className="flex h-full items-center justify-center">
+                  <div className="text-[14px]" style={{ ...fBody, color: C.inkSoft }}>Loading hostels…</div>
+                </div>
+              ) : (
+                <HomeScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} />
+              )
+            )}
+            {tab === "map" && <MapScreen hostels={hostels} onOpen={(id) => setOpenHostelId(id)} />}
+            {tab === "favs" && <FavouritesScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} />}
             {tab === "admin" && role === "admin" && <AdminScreen showToast={showToast} />}
-            {tab === "profile" && <ProfileScreen role={role} onLogout={() => { setRole(null); setTab("home"); showToast("Logged out"); }} showToast={showToast} />}
+            {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} />}
           </div>
         )}
       </div>
