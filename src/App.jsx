@@ -135,14 +135,34 @@ const INITIAL_REVIEWS = {
 };
 
 const PENDING_VERIFICATIONS = [
-  { id: "pv1", name: "Fig Tree Hostels", submitted: "2 days ago", landlord: "John Mutuma" },
-  { id: "pv2", name: "Cedar Court", submitted: "5 days ago", landlord: "Alex Kithinji" },
-  { id: "pv3", name: "Maple Annex (new)", submitted: "Today", landlord: "Grace Muthoni" },
+  { id: "pv1", name: "Fig Tree Hostels", submitted: "2 days ago", landlord: "John Mutuma", phone: "+254712345003", rooms: 8, price: 3500, location: "1.6 km from campus" },
+  { id: "pv2", name: "Cedar Court", submitted: "5 days ago", landlord: "Alex Kithinji", phone: "+254712345006", rooms: 12, price: 6000, location: "2.0 km from campus" },
+  { id: "pv3", name: "Maple Annex (new)", submitted: "Today", landlord: "Grace Muthoni", phone: "+254799001122", rooms: 5, price: 5500, location: "0.7 km from campus" },
 ];
 
 const FLAGGED_REVIEWS = [
-  { id: "fr1", hostel: "Unity Hostel", user: "Anonymous123", text: "Contains a suspicious external phone number and payment request outside the app.", flaggedBy: "System" },
-  { id: "fr2", hostel: "Fig Tree Hostels", user: "user_882", text: "Reported by 3 students as potentially fake / competitor review.", flaggedBy: "3 students" },
+  { id: "fr1", hostel: "Unity Hostel", user: "Anonymous123", text: "Contains a suspicious external phone number and payment request outside the app.", flaggedBy: "System", date: "Today" },
+  { id: "fr2", hostel: "Fig Tree Hostels", user: "user_882", text: "Reported by 3 students as potentially fake / competitor review.", flaggedBy: "3 students", date: "Yesterday" },
+  { id: "fr3", hostel: "Chuka Scholars Lodge", user: "anon_55", text: "This review looks copied word-for-word from another listing.", flaggedBy: "System", date: "3 days ago" },
+];
+
+const ADMIN_USERS = [
+  { id: "u1", name: "Faith Wanjiru", email: "faith@students.chuka.ac.ke", role: "student", joined: "Jan 2024", bookmarks: 4, status: "active" },
+  { id: "u2", name: "Mike Otieno", email: "mike@students.chuka.ac.ke", role: "student", joined: "Feb 2024", bookmarks: 2, status: "active" },
+  { id: "u3", name: "Purity Nthiga", email: "purity@students.chuka.ac.ke", role: "student", joined: "Sep 2023", bookmarks: 7, status: "active" },
+  { id: "u4", name: "Collins Ruto", email: "collins@students.chuka.ac.ke", role: "student", joined: "Sep 2023", bookmarks: 1, status: "active" },
+  { id: "u5", name: "Anonymous123", email: "anon123@mail.com", role: "student", joined: "Mar 2024", bookmarks: 0, status: "flagged" },
+  { id: "u6", name: "Sharon Atieno", email: "sharon@students.chuka.ac.ke", role: "student", joined: "Jan 2024", bookmarks: 3, status: "active" },
+  { id: "u7", name: "Admin User", email: "admin@chunanest.co.ke", role: "admin", joined: "Jan 2023", bookmarks: 0, status: "active" },
+];
+
+const MONTHLY_ENQUIRIES = [
+  { month: "Feb", count: 18 },
+  { month: "Mar", count: 27 },
+  { month: "Apr", count: 35 },
+  { month: "May", count: 52 },
+  { month: "Jun", count: 44 },
+  { month: "Jul", count: 61 },
 ];
 
 /* ---------------------------------- SMALL UI PRIMITIVES ---------------------------------- */
@@ -973,107 +993,320 @@ function ProfileScreen({ role, onLogout, showToast }) {
 /* ---------------------------------- ADMIN SCREEN ---------------------------------- */
 
 function AdminScreen({ showToast }) {
-  const [activeTab, setActiveTab] = useState("verifications");
+  const [activeTab, setActiveTab] = useState("overview");
   const [verifications, setVerifications] = useState(PENDING_VERIFICATIONS);
   const [flagged, setFlagged] = useState(FLAGGED_REVIEWS);
+  const [listings, setListings] = useState(HOSTELS);
+  const [users, setUsers] = useState(ADMIN_USERS);
 
-  const handleVerify = (id) => {
-    setVerifications((v) => v.filter((x) => x.id !== id));
-    showToast("Hostel verified ✓");
-  };
-  const handleRejectV = (id) => {
-    setVerifications((v) => v.filter((x) => x.id !== id));
-    showToast("Verification rejected");
-  };
-  const handleDismissFlag = (id) => {
-    setFlagged((f) => f.filter((x) => x.id !== id));
-    showToast("Review cleared");
-  };
-  const handleRemoveReview = (id) => {
-    setFlagged((f) => f.filter((x) => x.id !== id));
-    showToast("Review removed");
-  };
+  const verifiedCount = listings.filter((h) => h.verified).length;
+  const totalRooms = listings.reduce((s, h) => s + h.availableRooms, 0);
+  const maxEnquiry = Math.max(...MONTHLY_ENQUIRIES.map((m) => m.count));
+
+  const TABS = [
+    { id: "overview",      label: "Overview",      icon: LayoutDashboard },
+    { id: "listings",      label: "Listings",      icon: Building2 },
+    { id: "users",         label: "Users",         icon: Users },
+    { id: "verifications", label: "Verify",        icon: Clock, badge: verifications.length },
+    { id: "flagged",       label: "Flagged",       icon: Flag, badge: flagged.length },
+  ];
 
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
-      <TopBar
-        title="Admin Dashboard"
-        right={<Badge tone="gold">Admin</Badge>}
-      />
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 px-4 py-3">
-        {[
-          { label: "Listings", value: HOSTELS.length, icon: Building2 },
-          { label: "Pending", value: verifications.length, icon: Clock },
-          { label: "Flagged", value: flagged.length, icon: Flag },
-        ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="flex flex-col items-center rounded-2xl py-3" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
-            <Icon size={18} color={C.primaryDark} />
-            <div className="text-[18px] font-bold mt-1" style={{ ...fMono, color: C.ink }}>{value}</div>
-            <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>{label}</div>
-          </div>
-        ))}
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${C.line}` }}>
+        <div>
+          <div className="text-[18px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>Admin Dashboard</div>
+          <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>ChukaNest · July 2024</div>
+        </div>
+        <Badge tone="gold">Admin</Badge>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-0 border-b px-4" style={{ borderColor: C.line }}>
-        {["verifications", "flagged"].map((t) => (
+      {/* Tab bar */}
+      <div className="flex overflow-x-auto gap-1 px-3 py-2 shrink-0" style={{ borderBottom: `1px solid ${C.line}` }}>
+        {TABS.map(({ id, label, icon: Icon, badge }) => (
           <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            className="mr-4 pb-2.5 text-[13px] font-semibold capitalize transition-all"
-            style={{ ...fBody, color: activeTab === t ? C.primary : C.inkSoft, borderBottom: activeTab === t ? `2px solid ${C.primary}` : "2px solid transparent" }}
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold shrink-0 relative transition-all"
+            style={{
+              ...fBody,
+              background: activeTab === id ? C.primaryDark : "transparent",
+              color: activeTab === id ? "#fff" : C.inkSoft,
+            }}
           >
-            {t === "verifications" ? "Pending Verifications" : "Flagged Reviews"}
+            <Icon size={13} />
+            {label}
+            {!!badge && (
+              <span className="ml-0.5 rounded-full px-1.5 py-0 text-[10px] font-bold" style={{ background: C.danger, color: "#fff" }}>{badge}</span>
+            )}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 md:pb-6 space-y-3">
-        {activeTab === "verifications" && (
-          verifications.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-center">
-              <CheckCircle2 size={40} color={C.primary} />
-              <div className="mt-3 text-[15px] font-semibold" style={{ ...fDisplay, color: C.inkSoft }}>All clear!</div>
-            </div>
-          ) : verifications.map((v) => (
-            <div key={v.id} className="rounded-2xl p-4" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div>
-                  <div className="text-[14px] font-bold" style={{ ...fDisplay, color: C.ink }}>{v.name}</div>
-                  <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>by {v.landlord} · submitted {v.submitted}</div>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto pb-24 md:pb-6">
+
+        {/* ── OVERVIEW ── */}
+        {activeTab === "overview" && (
+          <div className="px-4 py-4 space-y-5">
+            {/* Stat cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: "Total Listings", value: listings.length, icon: Building2, color: C.primary },
+                { label: "Verified", value: verifiedCount, icon: ShieldCheck, color: "#1B8A5A" },
+                { label: "Registered Users", value: users.length, icon: Users, color: C.gold },
+                { label: "Available Rooms", value: totalRooms, icon: Home, color: "#5B6DCD" },
+              ].map(({ label, value, icon: Icon, color }) => (
+                <div key={label} className="rounded-2xl p-4 flex items-center gap-3" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+                  <div className="rounded-xl p-2.5 shrink-0" style={{ background: color + "18" }}>
+                    <Icon size={20} color={color} />
+                  </div>
+                  <div>
+                    <div className="text-[22px] font-extrabold leading-none" style={{ ...fMono, color: C.ink }}>{value}</div>
+                    <div className="text-[11px] mt-0.5" style={{ ...fBody, color: C.inkSoft }}>{label}</div>
+                  </div>
                 </div>
-                <Badge tone="gold">Pending</Badge>
-              </div>
-              <div className="flex gap-2">
-                <PrimaryButton onClick={() => handleVerify(v.id)} icon={Check}>Verify</PrimaryButton>
-                <PrimaryButton variant="outline" onClick={() => handleRejectV(v.id)} icon={X}>Reject</PrimaryButton>
+              ))}
+            </div>
+
+            {/* Enquiry chart */}
+            <div className="rounded-2xl p-4" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+              <div className="text-[13px] font-bold mb-4" style={{ ...fDisplay, color: C.ink }}>Monthly Enquiries</div>
+              <div className="flex items-end gap-2" style={{ height: 100 }}>
+                {MONTHLY_ENQUIRIES.map(({ month, count }) => (
+                  <div key={month} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="text-[10px] font-semibold" style={{ ...fMono, color: C.primary }}>{count}</div>
+                    <div className="w-full rounded-t-lg transition-all" style={{ height: `${(count / maxEnquiry) * 80}px`, background: C.primary, opacity: 0.85 }} />
+                    <div className="text-[10px]" style={{ ...fBody, color: C.inkSoft }}>{month}</div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))
+
+            {/* Quick alerts */}
+            <div className="space-y-2">
+              <div className="text-[13px] font-bold mb-1" style={{ ...fDisplay, color: C.ink }}>Needs Attention</div>
+              {verifications.length > 0 && (
+                <button onClick={() => setActiveTab("verifications")} className="w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" style={{ background: C.goldSoft, border: `1px solid ${C.gold}40` }}>
+                  <Clock size={18} color={C.gold} />
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold" style={{ ...fBody, color: C.ink }}>{verifications.length} pending verifications</div>
+                    <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Review and approve new listings</div>
+                  </div>
+                  <ChevronRight size={16} color={C.inkSoft} />
+                </button>
+              )}
+              {flagged.length > 0 && (
+                <button onClick={() => setActiveTab("flagged")} className="w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" style={{ background: C.dangerSoft, border: `1px solid ${C.danger}30` }}>
+                  <Flag size={18} color={C.danger} />
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold" style={{ ...fBody, color: C.ink }}>{flagged.length} flagged reviews</div>
+                    <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Moderate review content</div>
+                  </div>
+                  <ChevronRight size={16} color={C.inkSoft} />
+                </button>
+              )}
+              {verifications.length === 0 && flagged.length === 0 && (
+                <div className="flex items-center gap-3 rounded-2xl p-3.5" style={{ background: C.mint }}>
+                  <CheckCircle2 size={18} color={C.primary} />
+                  <div className="text-[13px] font-semibold" style={{ ...fBody, color: C.primary }}>Everything looks good — no pending actions</div>
+                </div>
+              )}
+            </div>
+
+            {/* Listing breakdown */}
+            <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${C.line}` }}>
+              <div className="px-4 py-3" style={{ background: C.surface, borderBottom: `1px solid ${C.line}` }}>
+                <div className="text-[13px] font-bold" style={{ ...fDisplay, color: C.ink }}>Listings by Gender</div>
+              </div>
+              {[
+                { label: "Female only", count: listings.filter(h => h.gender === "Female").length, color: "#E879A0" },
+                { label: "Male only",   count: listings.filter(h => h.gender === "Male").length,   color: "#5B6DCD" },
+                { label: "Mixed",       count: listings.filter(h => h.gender === "Mixed").length,   color: C.primary },
+              ].map(({ label, count, color }) => (
+                <div key={label} className="flex items-center gap-3 px-4 py-3" style={{ background: C.surface, borderBottom: `1px solid ${C.line}` }}>
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
+                  <div className="flex-1 text-[13px]" style={{ ...fBody, color: C.ink }}>{label}</div>
+                  <div className="text-[13px] font-bold" style={{ ...fMono, color: C.ink }}>{count}</div>
+                  <div className="w-24 h-2 rounded-full overflow-hidden" style={{ background: C.line }}>
+                    <div className="h-full rounded-full" style={{ width: `${(count / listings.length) * 100}%`, background: color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
+        {/* ── LISTINGS ── */}
+        {activeTab === "listings" && (
+          <div className="px-4 py-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>{listings.length} listings total</div>
+              <button onClick={() => showToast("Add listing coming soon")} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-semibold" style={{ background: C.primary, color: "#fff", ...fBody }}>
+                <Plus size={13} /> Add Listing
+              </button>
+            </div>
+            {listings.map((h) => (
+              <div key={h.id} className="rounded-2xl overflow-hidden" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+                <div className="flex items-center gap-3 p-3">
+                  <img src={h.images[0]} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" style={{ aspectRatio: "1/1" }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="text-[14px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{h.name}</div>
+                      {h.verified
+                        ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.mint, color: C.primary }}>Verified</span>
+                        : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.goldSoft, color: C.gold }}>Unverified</span>
+                      }
+                    </div>
+                    <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{h.landlord} · {h.gender} · {h.roomType}</div>
+                    <div className="text-[12px] font-semibold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo · {h.availableRooms} rooms</div>
+                  </div>
+                </div>
+                <div className="flex border-t" style={{ borderColor: C.line }}>
+                  <button onClick={() => showToast(`Editing ${h.name}…`)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                    <Pencil size={13} /> Edit
+                  </button>
+                  {!h.verified && (
+                    <button
+                      onClick={() => { setListings((l) => l.map((x) => x.id === h.id ? { ...x, verified: true } : x)); showToast(`${h.name} verified ✓`); }}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold border-l"
+                      style={{ ...fBody, color: C.primary, borderColor: C.line }}
+                    >
+                      <ShieldCheck size={13} /> Verify
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setListings((l) => l.filter((x) => x.id !== h.id)); showToast("Listing removed"); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold border-l"
+                    style={{ ...fBody, color: C.danger, borderColor: C.line }}
+                  >
+                    <Trash2 size={13} /> Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── USERS ── */}
+        {activeTab === "users" && (
+          <div className="px-4 py-4 space-y-2">
+            <div className="text-[13px] mb-3" style={{ ...fBody, color: C.inkSoft }}>{users.length} registered accounts</div>
+            {users.map((u) => (
+              <div key={u.id} className="flex items-center gap-3 rounded-2xl p-3.5" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+                {/* Avatar */}
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[15px] font-bold" style={{ background: u.status === "flagged" ? C.dangerSoft : C.mint, color: u.status === "flagged" ? C.danger : C.primary }}>
+                  {u.name.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{u.name}</div>
+                    {u.role === "admin" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.goldSoft, color: C.gold }}>Admin</span>}
+                    {u.status === "flagged" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.dangerSoft, color: C.danger }}>Flagged</span>}
+                  </div>
+                  <div className="text-[11px] truncate" style={{ ...fBody, color: C.inkSoft }}>{u.email}</div>
+                  <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Joined {u.joined} · {u.bookmarks} saved</div>
+                </div>
+                <button onClick={() => showToast(`${u.name} suspended`)} className="shrink-0 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold" style={{ ...fBody, background: C.dangerSoft, color: C.danger }}>
+                  Suspend
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── VERIFICATIONS ── */}
+        {activeTab === "verifications" && (
+          <div className="px-4 py-4 space-y-3">
+            {verifications.length === 0 ? (
+              <div className="flex flex-col items-center py-20">
+                <CheckCircle2 size={44} color={C.primary} />
+                <div className="mt-3 text-[15px] font-semibold" style={{ ...fDisplay, color: C.inkSoft }}>All caught up!</div>
+                <div className="text-[13px] mt-1" style={{ ...fBody, color: C.inkSoft }}>No pending verifications</div>
+              </div>
+            ) : verifications.map((v) => (
+              <div key={v.id} className="rounded-2xl overflow-hidden" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div>
+                      <div className="text-[15px] font-bold" style={{ ...fDisplay, color: C.ink }}>{v.name}</div>
+                      <div className="text-[12px] mt-0.5" style={{ ...fBody, color: C.inkSoft }}>by {v.landlord} · {v.phone}</div>
+                    </div>
+                    <Badge tone="gold">Pending</Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {[
+                      { label: "Rooms", value: v.rooms },
+                      { label: "Price/mo", value: `KES ${v.price.toLocaleString()}` },
+                      { label: "Distance", value: v.location.split(" ")[0] + " km" },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="rounded-xl p-2 text-center" style={{ background: C.bg }}>
+                        <div className="text-[12px] font-bold" style={{ ...fMono, color: C.ink }}>{value}</div>
+                        <div className="text-[10px]" style={{ ...fBody, color: C.inkSoft }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-[11px] mb-3" style={{ ...fBody, color: C.inkSoft }}>Submitted {v.submitted}</div>
+                </div>
+                <div className="flex border-t" style={{ borderColor: C.line }}>
+                  <button
+                    onClick={() => { setVerifications((vs) => vs.filter((x) => x.id !== v.id)); showToast(`${v.name} verified ✓`); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold"
+                    style={{ ...fBody, color: C.primary }}
+                  >
+                    <Check size={15} /> Approve
+                  </button>
+                  <button
+                    onClick={() => { setVerifications((vs) => vs.filter((x) => x.id !== v.id)); showToast("Verification rejected"); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold border-l"
+                    style={{ ...fBody, color: C.danger, borderColor: C.line }}
+                  >
+                    <X size={15} /> Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── FLAGGED REVIEWS ── */}
         {activeTab === "flagged" && (
-          flagged.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-center">
-              <CheckCircle2 size={40} color={C.primary} />
-              <div className="mt-3 text-[15px] font-semibold" style={{ ...fDisplay, color: C.inkSoft }}>No flagged reviews</div>
-            </div>
-          ) : flagged.map((f) => (
-            <div key={f.id} className="rounded-2xl p-4" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <div className="text-[13px] font-bold" style={{ ...fDisplay, color: C.ink }}>{f.hostel}</div>
-                <Badge tone="danger">Flagged by {f.flaggedBy}</Badge>
+          <div className="px-4 py-4 space-y-3">
+            {flagged.length === 0 ? (
+              <div className="flex flex-col items-center py-20">
+                <CheckCircle2 size={44} color={C.primary} />
+                <div className="mt-3 text-[15px] font-semibold" style={{ ...fDisplay, color: C.inkSoft }}>No flagged reviews</div>
               </div>
-              <div className="text-[12px] mb-1" style={{ ...fBody, color: C.inkSoft }}>by {f.user}</div>
-              <p className="text-[13px] mb-3 leading-relaxed" style={{ ...fBody, color: C.ink }}>{f.text}</p>
-              <div className="flex gap-2">
-                <PrimaryButton onClick={() => handleDismissFlag(f.id)} variant="ghost" icon={ThumbsUp}>Keep</PrimaryButton>
-                <PrimaryButton onClick={() => handleRemoveReview(f.id)} icon={Trash2}>Remove</PrimaryButton>
+            ) : flagged.map((f) => (
+              <div key={f.id} className="rounded-2xl overflow-hidden" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="text-[14px] font-bold" style={{ ...fDisplay, color: C.ink }}>{f.hostel}</div>
+                    <div className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: C.dangerSoft, color: C.danger }}>Flagged by {f.flaggedBy}</div>
+                  </div>
+                  <div className="text-[11px] mb-2" style={{ ...fBody, color: C.inkSoft }}>by {f.user} · {f.date}</div>
+                  <p className="text-[13px] leading-relaxed rounded-xl p-3" style={{ ...fBody, color: C.ink, background: C.bg }}>{f.text}</p>
+                </div>
+                <div className="flex border-t" style={{ borderColor: C.line }}>
+                  <button
+                    onClick={() => { setFlagged((fl) => fl.filter((x) => x.id !== f.id)); showToast("Review cleared — kept"); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold"
+                    style={{ ...fBody, color: C.primary }}
+                  >
+                    <ThumbsUp size={15} /> Keep
+                  </button>
+                  <button
+                    onClick={() => { setFlagged((fl) => fl.filter((x) => x.id !== f.id)); showToast("Review removed"); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold border-l"
+                    style={{ ...fBody, color: C.danger, borderColor: C.line }}
+                  >
+                    <Trash2 size={15} /> Remove
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>
