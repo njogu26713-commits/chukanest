@@ -342,6 +342,7 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
 function AuthScreen({ onAuthed, showToast }) {
   const [mode, setMode] = useState("login");
   const [showPw, setShowPw] = useState(false);
+  const [email, setEmail] = useState("");
 
   const formPanel = (
     <div className="w-full max-w-sm mx-auto flex flex-col justify-center py-10 px-6 md:px-8">
@@ -387,7 +388,7 @@ function AuthScreen({ onAuthed, showToast }) {
           )}
           <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
             <Mail size={16} color={C.inkSoft} />
-            <input placeholder="you@students.chuka.ac.ke" className="w-full bg-transparent text-sm outline-none" style={fBody} />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@students.chuka.ac.ke" className="w-full bg-transparent text-sm outline-none" style={fBody} />
           </div>
           <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
             <Lock size={16} color={C.inkSoft} />
@@ -397,7 +398,11 @@ function AuthScreen({ onAuthed, showToast }) {
         </div>
 
         <div className="mt-5">
-          <PrimaryButton full onClick={() => { showToast(mode === "login" ? "Welcome back! 🎉" : "Account created — welcome to ChukaNest!"); onAuthed("student"); }}>
+          <PrimaryButton full onClick={() => {
+            const isAdmin = email.trim().toLowerCase() === "admin@chukanest.co.ke";
+            showToast(isAdmin ? "Welcome, Admin 👋" : mode === "login" ? "Welcome back! 🎉" : "Account created — welcome to ChukaNest!");
+            onAuthed(isAdmin ? "admin" : "student");
+          }}>
             {mode === "login" ? "Log In" : "Create Account"}
           </PrimaryButton>
         </div>
