@@ -7,6 +7,7 @@ import hostelRoutes from "./routes/hostels.js";
 import reviewRoutes from "./routes/reviews.js";
 import { flaggedRouter } from "./routes/reviews.js";
 import userRoutes from "./routes/users.js";
+import aiRoutes from "./routes/ai.js";
 
 const app = express();
 app.use(cors());
@@ -18,6 +19,7 @@ app.use("/api/hostels", hostelRoutes);
 app.use("/api/reviews", flaggedRouter);
 app.use("/api/users", userRoutes);
 
+app.use("/api/ai", aiRoutes);
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
 const PORT = process.env.API_PORT || 3001;

@@ -43,6 +43,11 @@ export const api = {
   getFlaggedReviews: () => req("GET", "/reviews/flagged").then(normArr),
   moderateReview: (id, action) => req("PATCH", `/reviews/${id}`, { action }),
 
+  // AI
+  aiSearch: (query) => req("POST", "/ai/search", { query }),
+  aiSummarize: (hostelId) => req("POST", `/ai/summarize/${hostelId}`),
+  aiRecommend: (data) => req("POST", "/ai/recommend", data),
+
   // Users
   getUsers: () => req("GET", "/users").then(normArr),
   updateUser: (id, data) => req("PATCH", `/users/${id}`, data).then(norm),

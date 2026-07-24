@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Pencil, LogOut, Mail, Lock,
   BarChart3, Users, LayoutDashboard, TrendingUp, AlertTriangle, CheckCircle2,
   SlidersHorizontal, ImagePlus, Building2, ArrowLeft, Eye, EyeOff, Flag, Clock,
-  ThumbsUp, MoreVertical
+  ThumbsUp, MoreVertical, Sparkles, Loader2
 } from "lucide-react";
 import { api, saveAuth, loadAuth, clearAuth } from "./api.js";
 
@@ -417,20 +417,78 @@ function AuthScreen({ onAuthed, showToast }) {
 
 /* ---------------------------------- HOME SCREEN ---------------------------------- */
 
-function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast }) {
+function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser, favIds }) {
   const [search, setSearch] = useState("");
   const [genderFilter, setGenderFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
   const [sortBy, setSortBy] = useState("rating");
 
+  // AI Smart Search
+  const [aiMode, setAiMode] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiFilters, setAiFilters] = useState(null); // structured filters from AI
+  const [aiHint, setAiHint] = useState(""); // human-readable interpretation
+
+  // AI Recommendations
+  const [recs, setRecs] = useState([]);
+  const [recsLoading, setRecsLoading] = useState(false);
+  const [recsLoaded, setRecsLoaded] = useState(false);
+
+  // Load recommendations once on mount (only for logged-in users)
+  useEffect(() => {
+    if (!currentUser || recsLoaded) return;
+    setRecsLoading(true);
+    setRecsLoaded(true);
+    api.aiRecommend({ bookmarkedIds: favIds ? [...favIds] : [], gender: null, budget: null })
+      .then((data) => setRecs(data.recommendations || []))
+      .catch(() => {})
+      .finally(() => setRecsLoading(false));
+  }, [currentUser]);
+
+  const handleAiSearch = async () => {
+    if (!search.trim()) return;
+    setAiLoading(true);
+    setAiFilters(null);
+    setAiHint("");
+    try {
+      const result = await api.aiSearch(search.trim());
+      setAiFilters(result);
+      setAiHint(result.summary || "");
+      // Apply AI-suggested sort
+      if (result.sortBy) setSortBy(result.sortBy);
+      // Apply AI-suggested gender/type filters
+      if (result.gender) setGenderFilter(result.gender);
+      if (result.roomType) setTypeFilter(result.roomType);
+    } catch {
+      showToast("AI search failed — try again");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const clearAiSearch = () => {
+    setAiFilters(null);
+    setAiHint("");
+    setSearch("");
+    setGenderFilter("All");
+    setTypeFilter("All");
+    setSortBy("rating");
+  };
+
   const filtered = useMemo(() => {
     return hostels
       .filter((h) => {
-        const q = search.toLowerCase();
+        // Regular text search (when not in AI mode or AI hasn't run yet)
+        const q = aiFilters ? "" : search.toLowerCase();
         const matchSearch = !q || h.name.toLowerCase().includes(q) || h.roomType.toLowerCase().includes(q);
         const matchGender = genderFilter === "All" || h.gender === genderFilter;
         const matchType = typeFilter === "All" || h.roomType === typeFilter;
-        return matchSearch && matchGender && matchType;
+        // AI filters (applied on top)
+        const matchMaxPrice = !aiFilters?.maxPrice || h.price <= aiFilters.maxPrice;
+        const matchMinRating = !aiFilters?.minRating || h.rating >= aiFilters.minRating;
+        const matchAmenities = !aiFilters?.amenities?.length ||
+          aiFilters.amenities.every((a) => h.amenities.includes(a));
+        return matchSearch && matchGender && matchType && matchMaxPrice && matchMinRating && matchAmenities;
       })
       .sort((a, b) => {
         if (sortBy === "rating") return b.rating - a.rating;
@@ -439,7 +497,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast }) {
         if (sortBy === "distance") return a.distance - b.distance;
         return 0;
       });
-  }, [hostels, search, genderFilter, typeFilter, sortBy]);
+  }, [hostels, search, genderFilter, typeFilter, sortBy, aiFilters]);
 
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
@@ -455,17 +513,52 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast }) {
           </div>
         </div>
         {/* Search */}
-        <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
-          <Search size={16} color={C.inkSoft} />
+        <div
+          className="flex items-center gap-2 rounded-2xl px-3.5 py-3"
+          style={{ background: C.bg, border: `1.5px solid ${aiMode ? C.primary : C.line}`, transition: "border-color 0.2s" }}
+        >
+          {aiLoading
+            ? <Loader2 size={16} color={C.primary} className="animate-spin shrink-0" />
+            : aiMode
+              ? <Sparkles size={16} color={C.primary} className="shrink-0" />
+              : <Search size={16} color={C.inkSoft} className="shrink-0" />
+          }
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search hostels, room types…"
+            onChange={(e) => { setSearch(e.target.value); if (aiFilters) clearAiSearch(); }}
+            onKeyDown={(e) => { if (e.key === "Enter" && aiMode) handleAiSearch(); }}
+            placeholder={aiMode ? "Describe what you're looking for…" : "Search hostels, room types…"}
             className="w-full bg-transparent text-sm outline-none"
             style={fBody}
           />
-          {search && <button onClick={() => setSearch("")}><X size={14} color={C.inkSoft} /></button>}
+          {(search || aiFilters) && (
+            <button onClick={clearAiSearch}><X size={14} color={C.inkSoft} /></button>
+          )}
+          {/* AI toggle */}
+          <button
+            onClick={() => { setAiMode((m) => !m); if (aiFilters) clearAiSearch(); }}
+            className="shrink-0 flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold transition-all"
+            style={{ background: aiMode ? C.primary : C.mint, color: aiMode ? "#fff" : C.primaryDark }}
+            title={aiMode ? "Switch to regular search" : "Switch to AI search"}
+          >
+            <Sparkles size={11} />
+            AI
+          </button>
         </div>
+
+        {/* AI mode hint */}
+        {aiMode && !aiFilters && !aiLoading && (
+          <div className="mt-1.5 text-[11px] px-1" style={{ ...fBody, color: C.inkSoft }}>
+            Try: "quiet female hostel under 6k" or "wifi + security near gate" — press Enter
+          </div>
+        )}
+        {aiHint && (
+          <div className="mt-1.5 flex items-center gap-1.5 rounded-xl px-3 py-1.5" style={{ background: C.mint }}>
+            <Sparkles size={11} color={C.primary} />
+            <span className="text-[11px] font-semibold" style={{ ...fBody, color: C.primaryDark }}>{aiHint}</span>
+          </div>
+        )}
+
         {/* Filter chips */}
         <div className="mt-2.5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {["All", "Female", "Male", "Mixed"].map((g) => (
@@ -495,6 +588,45 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast }) {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto px-4 pb-24 md:pb-6">
+
+        {/* AI Recommendations strip */}
+        {recs.length > 0 && !aiFilters && (
+          <div className="mb-4 mt-2">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Sparkles size={13} color={C.primary} />
+              <span className="text-[12px] font-bold" style={{ ...fDisplay, color: C.ink }}>Recommended for you</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+              {recs.map(({ hostel: h, reason }) => (
+                <button
+                  key={h._id}
+                  onClick={() => onOpen(h._id)}
+                  className="shrink-0 rounded-2xl text-left overflow-hidden"
+                  style={{ width: 200, background: C.surface, border: `1px solid ${C.line}`, boxShadow: "0 2px 8px rgba(20,37,27,0.06)" }}
+                >
+                  <img src={h.images?.[0]} alt={h.name} className="w-full object-cover" style={{ height: 110 }} />
+                  <div className="p-2.5">
+                    <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{h.name}</div>
+                    <div className="text-[11px] font-bold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {h.price?.toLocaleString()}/mo</div>
+                    <div className="mt-1.5 rounded-lg px-2 py-1" style={{ background: C.mint }}>
+                      <div className="flex items-start gap-1">
+                        <Sparkles size={9} color={C.primary} className="mt-0.5 shrink-0" />
+                        <span className="text-[10px] leading-snug" style={{ ...fBody, color: C.primaryDark }}>{reason}</span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {recsLoading && (
+          <div className="flex items-center gap-1.5 mb-3 mt-2">
+            <Loader2 size={12} color={C.primary} className="animate-spin" />
+            <span className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Finding recommendations…</span>
+          </div>
+        )}
+
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-center">
             <Search size={40} color={C.line} />
@@ -522,10 +654,22 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
   const [tab, setTab] = useState("about");
   const [submitting, setSubmitting] = useState(false);
 
-  // Load reviews when switching to reviews tab
+  // AI review summary
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryFetched, setSummaryFetched] = useState(false);
+
+  // Load reviews + AI summary when switching to reviews tab
   useEffect(() => {
-    if (tab === "reviews" && !reviews) {
-      onLoadReviews(hostel.id);
+    if (tab !== "reviews") return;
+    if (!reviews) onLoadReviews(hostel.id);
+    if (!summaryFetched) {
+      setSummaryFetched(true);
+      setSummaryLoading(true);
+      api.aiSummarize(hostel.id)
+        .then((data) => setReviewSummary(data.summary || null))
+        .catch(() => {})
+        .finally(() => setSummaryLoading(false));
     }
   }, [tab]);
 
@@ -667,6 +811,23 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
 
           {tab === "reviews" && (
             <div>
+              {/* AI Summary Card */}
+              {summaryLoading && (
+                <div className="mb-4 flex items-center gap-2 rounded-2xl px-4 py-3" style={{ background: C.mint }}>
+                  <Loader2 size={14} color={C.primary} className="animate-spin shrink-0" />
+                  <span className="text-[12px]" style={{ ...fBody, color: C.primaryDark }}>Summarising reviews with AI…</span>
+                </div>
+              )}
+              {reviewSummary && !summaryLoading && (
+                <div className="mb-4 rounded-2xl px-4 py-3" style={{ background: C.mint, border: `1px solid ${C.primary}22` }}>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Sparkles size={13} color={C.primary} />
+                    <span className="text-[11px] font-bold" style={{ ...fBody, color: C.primaryDark }}>AI Summary</span>
+                  </div>
+                  <p className="text-[13px] leading-relaxed" style={{ ...fBody, color: C.ink }}>{reviewSummary}</p>
+                </div>
+              )}
+
               <div className="space-y-3 mb-5">
                 {hostelReviews.map((r) => (
                   <div key={r.id} className="rounded-2xl p-3.5" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
@@ -1564,7 +1725,7 @@ export default function App() {
                   <div className="text-[14px]" style={{ ...fBody, color: C.inkSoft }}>Loading hostels…</div>
                 </div>
               ) : (
-                <HomeScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} />
+                <HomeScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} currentUser={currentUser} favIds={[...favs]} />
               )
             )}
             {tab === "map" && <MapScreen hostels={hostels} onOpen={(id) => setOpenHostelId(id)} />}
