@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Pencil, LogOut, Mail, Lock,
   BarChart3, Users, LayoutDashboard, TrendingUp, AlertTriangle, CheckCircle2,
   SlidersHorizontal, ImagePlus, Building2, ArrowLeft, Eye, EyeOff, Flag, Clock,
-  ThumbsUp, MoreVertical, Sparkles, Loader2
+  ThumbsUp, MoreVertical, Sparkles, Loader2, Bot, Send
 } from "lucide-react";
 import { api, saveAuth, loadAuth, clearAuth } from "./api.js";
 
@@ -1570,6 +1570,219 @@ function AppNav({ tab, setTab, role }) {
   );
 }
 
+/* ────────────────────────── AI CHAT SIDEBAR ────────────────────────── */
+
+function ChatSidebar({ onClose, role }) {
+  const GREETING = "Hi! 👋 I'm your ChukaNest assistant. Tell me what you're looking for — budget, room type, gender preference — and I'll point you to the right hostel.";
+  const [messages, setMessages] = useState([{ role: "assistant", content: GREETING }]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [streamText, setStreamText] = useState("");
+  const bottomRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, streamText]);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    const userMsg = { role: "user", content: text };
+    const nextMsgs = [...messages, userMsg];
+    setMessages(nextMsgs);
+    setInput("");
+    setLoading(true);
+    setStreamText("");
+
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: nextMsgs.map(({ role, content }) => ({ role, content })),
+        }),
+      });
+
+      if (!res.ok) throw new Error("Request failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") break;
+          try {
+            const delta = JSON.parse(payload)?.choices?.[0]?.delta?.content || "";
+            full += delta;
+            setStreamText(full);
+          } catch {}
+        }
+      }
+
+      setMessages((prev) => [...prev, { role: "assistant", content: full }]);
+      setStreamText("");
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Sorry, I couldn't connect right now. Please try again!" },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const quickPrompts = [
+    "Female bedsitter under KES 5,000",
+    "Closest hostel to campus",
+    "Best rated with WiFi",
+    "Mixed hostel with parking",
+  ];
+
+  return (
+    /* Backdrop */
+    <div className="fixed inset-0 z-40 flex justify-end" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      {/* Panel */}
+      <div
+        className="relative flex flex-col h-full w-full max-w-sm"
+        style={{ background: C.bg, borderLeft: `1px solid ${C.line}`, boxShadow: "-6px 0 32px rgba(20,37,27,0.14)" }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center gap-3 px-4 py-3.5 shrink-0"
+          style={{ background: C.primary, borderBottom: `1px solid ${C.line}` }}
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.18)" }}>
+            <Bot size={16} color="#fff" />
+          </div>
+          <div className="flex-1">
+            <div className="text-[14px] font-bold text-white" style={fDisplay}>ChukaNest AI</div>
+            <div className="text-[11px] text-white/70" style={fBody}>Powered by Groq · llama-3.1</div>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors"
+            style={{ background: "rgba(255,255,255,0.15)" }}
+          >
+            <X size={14} color="#fff" />
+          </button>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+          {messages.map((m, i) => (
+            <div key={i} className={`flex gap-2.5 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              {m.role === "assistant" && (
+                <div className="shrink-0 h-7 w-7 rounded-full flex items-center justify-center mt-0.5" style={{ background: C.mint }}>
+                  <Bot size={13} color={C.primary} />
+                </div>
+              )}
+              <div
+                className="max-w-[78%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed"
+                style={{
+                  background: m.role === "user" ? C.primary : C.surface,
+                  color: m.role === "user" ? "#fff" : C.ink,
+                  borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                  border: m.role === "user" ? "none" : `1px solid ${C.line}`,
+                  ...fBody,
+                }}
+              >
+                {m.content}
+              </div>
+            </div>
+          ))}
+
+          {/* Streaming bubble */}
+          {streamText && (
+            <div className="flex gap-2.5">
+              <div className="shrink-0 h-7 w-7 rounded-full flex items-center justify-center mt-0.5" style={{ background: C.mint }}>
+                <Bot size={13} color={C.primary} />
+              </div>
+              <div
+                className="max-w-[78%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed"
+                style={{ background: C.surface, color: C.ink, borderRadius: "18px 18px 18px 4px", border: `1px solid ${C.line}`, ...fBody }}
+              >
+                {streamText}
+                <span className="inline-block w-1.5 h-3.5 ml-0.5 rounded-sm animate-pulse" style={{ background: C.primary, verticalAlign: "middle" }} />
+              </div>
+            </div>
+          )}
+
+          {/* Typing indicator (before first token) */}
+          {loading && !streamText && (
+            <div className="flex gap-2.5">
+              <div className="shrink-0 h-7 w-7 rounded-full flex items-center justify-center" style={{ background: C.mint }}>
+                <Bot size={13} color={C.primary} />
+              </div>
+              <div className="flex items-center gap-1 rounded-2xl px-4 py-3" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+                {[0, 1, 2].map((i) => (
+                  <span key={i} className="block h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: C.inkSoft, animationDelay: `${i * 0.15}s` }} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick prompts — only show when chat is fresh */}
+          {messages.length === 1 && !loading && (
+            <div className="pt-1 space-y-2">
+              <div className="text-[11px] font-semibold px-1" style={{ ...fBody, color: C.inkSoft }}>Try asking:</div>
+              {quickPrompts.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { setInput(p); inputRef.current?.focus(); }}
+                  className="block w-full text-left rounded-xl px-3 py-2 text-[12px] transition-colors"
+                  style={{ background: C.mint, color: C.primaryDark, ...fBody, border: `1px solid ${C.primary}22` }}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input bar */}
+        <div className="shrink-0 px-4 pb-6 pt-3" style={{ borderTop: `1px solid ${C.line}` }}>
+          <div className="flex items-end gap-2 rounded-2xl px-3.5 py-2.5" style={{ background: C.surface, border: `1.5px solid ${C.line}` }}>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder="Ask about hostels…"
+              rows={1}
+              className="flex-1 bg-transparent text-[13px] outline-none resize-none leading-relaxed"
+              style={{ ...fBody, color: C.ink, maxHeight: 96, overflowY: "auto" }}
+            />
+            <button
+              onClick={send}
+              disabled={!input.trim() || loading}
+              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-xl transition-all"
+              style={{ background: input.trim() && !loading ? C.primary : C.line }}
+            >
+              {loading
+                ? <Loader2 size={14} color="#fff" className="animate-spin" />
+                : <Send size={14} color={input.trim() ? "#fff" : C.inkSoft} />
+              }
+            </button>
+          </div>
+          <div className="mt-1.5 text-center text-[10px]" style={{ ...fBody, color: C.inkSoft }}>Enter to send · Shift+Enter for new line</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------- APP ROOT ---------------------------------- */
 
 export default function App() {
@@ -1582,6 +1795,7 @@ export default function App() {
   const [reviews, setReviews] = useState({}); // { hostelId: Review[] }
   const [toast, setToast] = useState(null);
   const [hostelLoading, setHostelLoading] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
   const toastRef = useRef(null);
 
   // Inject Google Fonts
@@ -1704,6 +1918,28 @@ export default function App() {
     <div className="flex h-screen w-full overflow-hidden" style={{ background: C.bg }}>
       <Toast toast={toast} />
       <AppNav tab={tab} setTab={setTab} role={role} />
+
+      {/* Floating AI chat button */}
+      {!chatOpen && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed z-40 flex items-center gap-2 rounded-full px-4 py-3 shadow-lg transition-all hover:scale-105"
+          style={{
+            bottom: 82,
+            right: 16,
+            background: C.primary,
+            boxShadow: "0 4px 20px rgba(20,100,60,0.35)",
+          }}
+          title="Ask AI Assistant"
+        >
+          <Bot size={18} color="#fff" />
+          <span className="text-[13px] font-bold text-white hidden sm:inline" style={fDisplay}>Ask AI</span>
+        </button>
+      )}
+
+      {/* AI Chat Sidebar */}
+      {chatOpen && <ChatSidebar onClose={() => setChatOpen(false)} role={role} />}
+
       <div className="flex-1 overflow-hidden md:ml-[220px]">
         {openHostel ? (
           <DetailScreen

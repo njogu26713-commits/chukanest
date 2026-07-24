@@ -174,4 +174,74 @@ Pick hostels that match the student's budget, gender preference, and are highly 
   }
 });
 
+/* ─────────────────────────────────────────────────────────────
+   POST /api/ai/chat
+   Body: { messages: [{role, content}] }
+   Streams an SSE response from Groq with hostel context injected
+───────────────────────────────────────────────────────────── */
+router.post("/chat", async (req, res) => {
+  try {
+    const { messages = [] } = req.body;
+
+    const hostels = await Hostel.find({ status: "active" })
+      .select("name gender roomType price distance rating amenities verified")
+      .lean();
+
+    const hostelList = hostels
+      .map(
+        (h) =>
+          `• ${h.name} — ${h.gender}, ${h.roomType}, KES ${h.price?.toLocaleString()}/mo, ${h.distance}km from campus, ⭐${h.rating}, amenities: ${h.amenities?.join(", ")}`
+      )
+      .join("\n");
+
+    const systemPrompt = `You are ChukaNest Assistant, a helpful and friendly AI for Chuka University students searching for hostels near campus in Kenya.
+
+Currently available hostels:
+${hostelList}
+
+Your job:
+- Help students find the right hostel based on their budget, gender, room type, or amenity preferences.
+- When a student describes what they want, suggest specific hostels by name from the list above.
+- Answer questions about hostel life, pricing, distance to campus, and amenities.
+- Keep responses concise (under 100 words unless detail is clearly needed).
+- Be warm, encouraging, and direct. Do not make up hostels not listed above.`;
+
+    const groqRes = await fetch(GROQ_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: MODEL_FAST,
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        temperature: 0.65,
+        max_tokens: 512,
+        stream: true,
+      }),
+    });
+
+    if (!groqRes.ok) {
+      const err = await groqRes.text();
+      return res.status(500).json({ error: err });
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    const reader = groqRes.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(decoder.decode(value, { stream: true }));
+    }
+    res.end();
+  } catch (err) {
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
