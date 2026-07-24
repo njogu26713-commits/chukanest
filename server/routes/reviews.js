@@ -44,7 +44,7 @@ router.post("/", requireAuth, async (req, res) => {
 
 // GET /api/reviews/flagged — admin only
 const flaggedRouter = Router();
-flaggedRouter.get("/", requireAuth, requireAdmin, async (req, res) => {
+flaggedRouter.get("/flagged", requireAuth, requireAdmin, async (req, res) => {
   try {
     const reviews = await Review.find({ flagged: true }).populate("hostelId", "name").sort({ updatedAt: -1 });
     const formatted = reviews.map((r) => ({
