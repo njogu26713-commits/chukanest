@@ -44,6 +44,27 @@ router.post("/", requireAuth, async (req, res) => {
 
 // GET /api/reviews/flagged — admin only
 const flaggedRouter = Router();
+
+// GET /api/reviews/mine — current user's reviews
+flaggedRouter.get("/mine", requireAuth, async (req, res) => {
+  try {
+    const reviews = await Review.find({ user: req.user.name })
+      .populate("hostelId", "name images")
+      .sort({ createdAt: -1 });
+    const formatted = reviews.map((r) => ({
+      id: r._id,
+      hostelId: r.hostelId?._id,
+      hostelName: r.hostelId?.name || "Unknown",
+      hostelImage: r.hostelId?.images?.[0] || null,
+      rating: r.rating,
+      text: r.text,
+      date: timeAgo(r.createdAt),
+    }));
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 flaggedRouter.get("/flagged", requireAuth, requireAdmin, async (req, res) => {
   try {
     const reviews = await Review.find({ flagged: true }).populate("hostelId", "name").sort({ updatedAt: -1 });

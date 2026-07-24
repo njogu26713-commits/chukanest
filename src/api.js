@@ -41,6 +41,7 @@ export const api = {
   addReview: (hostelId, data) =>
     req("POST", `/hostels/${hostelId}/reviews`, data).then(norm),
   getFlaggedReviews: () => req("GET", "/reviews/flagged").then(normArr),
+  getMyReviews: () => req("GET", "/reviews/mine").then(normArr),
   moderateReview: (id, action) => req("PATCH", `/reviews/${id}`, { action }),
 
   // AI

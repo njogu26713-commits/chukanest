@@ -1029,12 +1029,67 @@ function MapScreen({ hostels, onOpen }) {
 
 /* ---------------------------------- PROFILE SCREEN ---------------------------------- */
 
-function ProfileScreen({ role, currentUser, onLogout, showToast }) {
+function ProfileScreen({ role, currentUser, onLogout, showToast, onOpenChat }) {
+  const [open, setOpen] = useState(null); // which panel is expanded
+  const [myReviews, setMyReviews] = useState(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  const toggle = (id) => {
+    const next = open === id ? null : id;
+    setOpen(next);
+    if (next === "reviews" && myReviews === null) {
+      setReviewsLoading(true);
+      api.getMyReviews()
+        .then(setMyReviews)
+        .catch(() => setMyReviews([]))
+        .finally(() => setReviewsLoading(false));
+    }
+  };
+
+  const NOTIFICATIONS = [
+    { text: "Your review on Meru View Hostels was approved.", time: "2 days ago", icon: CheckCircle2, tone: C.primary },
+    { text: "New hostel added near campus: Kianjagi Court.", time: "5 days ago", icon: Building2, tone: C.primaryDark },
+    { text: "Welcome to ChukaNest! Find your home near campus.", time: "1 week ago", icon: Bell, tone: C.inkSoft },
+  ];
+
+  const StarRow = ({ n }) => (
+    <div className="flex gap-0.5">
+      {[1,2,3,4,5].map((i) => (
+        <Star key={i} size={11} color={i <= n ? "#f59e0b" : C.line} fill={i <= n ? "#f59e0b" : "none"} />
+      ))}
+    </div>
+  );
+
+  const MenuItem = ({ id, label, icon: Icon, children, onClick }) => {
+    const isOpen = open === id;
+    return (
+      <div className="rounded-2xl overflow-hidden" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+        <button
+          onClick={onClick || (() => toggle(id))}
+          className="flex w-full items-center gap-3 px-4 py-3.5"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0" style={{ background: C.mint }}>
+            <Icon size={17} color={C.primaryDark} />
+          </div>
+          <span className="flex-1 text-left text-[14px] font-medium" style={{ ...fBody, color: C.ink }}>{label}</span>
+          {children
+            ? <ChevronDown size={16} color={C.inkSoft} style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+            : <ChevronRight size={16} color={C.inkSoft} />
+          }
+        </button>
+        {children && isOpen && (
+          <div style={{ borderTop: `1px solid ${C.line}` }}>{children}</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
       <TopBar title="My Profile" />
       <div className="flex-1 overflow-y-auto pb-24 md:pb-6 px-4 pt-4 space-y-3">
-        {/* Avatar */}
+
+        {/* Avatar card */}
         <div className="flex flex-col items-center py-6 rounded-3xl" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl mb-3" style={{ background: C.mint }}>
             <User size={30} color={C.primaryDark} />
@@ -1050,27 +1105,100 @@ function ProfileScreen({ role, currentUser, onLogout, showToast }) {
           </div>
         </div>
 
-        {/* Menu items */}
-        {[
-          { label: "Notifications", icon: Bell },
-          { label: "My Reviews", icon: Star },
-          { label: "Help & Support", icon: MessageCircle },
-          { label: "About ChukaNest", icon: Building2 },
-        ].map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            onClick={() => showToast(`Opening ${label}…`)}
-            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5"
-            style={{ background: C.surface, border: `1px solid ${C.line}` }}
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: C.mint }}>
-              <Icon size={17} color={C.primaryDark} />
-            </div>
-            <span className="flex-1 text-left text-[14px] font-medium" style={{ ...fBody, color: C.ink }}>{label}</span>
-            <ChevronRight size={16} color={C.inkSoft} />
-          </button>
-        ))}
+        {/* Notifications */}
+        <MenuItem id="notifications" label="Notifications" icon={Bell}>
+          <div className="divide-y" style={{ borderColor: C.line }}>
+            {NOTIFICATIONS.map((n, i) => (
+              <div key={i} className="flex items-start gap-3 px-4 py-3">
+                <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full shrink-0" style={{ background: C.mint }}>
+                  <n.icon size={13} color={n.tone} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-[13px] leading-snug" style={{ ...fBody, color: C.ink }}>{n.text}</div>
+                  <div className="text-[11px] mt-0.5" style={{ ...fBody, color: C.inkSoft }}>{n.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </MenuItem>
 
+        {/* My Reviews */}
+        {role !== "guest" && (
+          <MenuItem id="reviews" label="My Reviews" icon={Star}>
+            <div className="px-4 py-3">
+              {reviewsLoading && (
+                <div className="flex items-center gap-2 py-2">
+                  <Loader2 size={14} color={C.primary} className="animate-spin" />
+                  <span className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>Loading your reviews…</span>
+                </div>
+              )}
+              {myReviews && myReviews.length === 0 && (
+                <div className="py-4 text-center">
+                  <Star size={28} color={C.line} className="mx-auto mb-2" />
+                  <div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>You haven't reviewed any hostels yet.</div>
+                </div>
+              )}
+              {myReviews && myReviews.length > 0 && (
+                <div className="space-y-3">
+                  {myReviews.map((r) => (
+                    <div key={r.id} className="rounded-xl p-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {r.hostelImage && (
+                          <img src={r.hostelImage} alt="" className="h-8 w-8 rounded-lg object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-semibold truncate" style={{ ...fDisplay, color: C.ink }}>{r.hostelName}</div>
+                          <StarRow n={r.rating} />
+                        </div>
+                        <span className="text-[10px] shrink-0" style={{ ...fBody, color: C.inkSoft }}>{r.date}</span>
+                      </div>
+                      <p className="text-[12px] leading-relaxed" style={{ ...fBody, color: C.inkSoft }}>{r.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </MenuItem>
+        )}
+
+        {/* Help & Support → opens AI chat */}
+        <MenuItem
+          id="help"
+          label="Help & Support"
+          icon={MessageCircle}
+          onClick={() => onOpenChat?.()}
+        />
+
+        {/* About ChukaNest */}
+        <MenuItem id="about" label="About ChukaNest" icon={Building2}>
+          <div className="px-4 py-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0" style={{ background: C.primary }}>
+                <Building2 size={18} color="#fff" />
+              </div>
+              <div>
+                <div className="text-[14px] font-bold" style={{ ...fDisplay, color: C.ink }}>ChukaNest</div>
+                <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>Version 1.0 · Chuka, Kenya</div>
+              </div>
+            </div>
+            <p className="text-[13px] leading-relaxed" style={{ ...fBody, color: C.inkSoft }}>
+              ChukaNest helps Chuka University students find safe, verified, and affordable accommodation near campus — with real reviews, transparent pricing, and zero scams.
+            </p>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              {[["7+", "Hostels"], ["200+", "Reviews"], ["0", "Scams"]].map(([val, lbl]) => (
+                <div key={lbl} className="rounded-xl py-2.5 text-center" style={{ background: C.mint }}>
+                  <div className="text-[16px] font-extrabold" style={{ ...fDisplay, color: C.primaryDark }}>{val}</div>
+                  <div className="text-[10px]" style={{ ...fBody, color: C.inkSoft }}>{lbl}</div>
+                </div>
+              ))}
+            </div>
+            <div className="text-[11px] text-center pt-1" style={{ ...fBody, color: C.inkSoft }}>
+              © 2024 ChukaNest · Built for students, by students
+            </div>
+          </div>
+        </MenuItem>
+
+        {/* Log out */}
         <button
           onClick={onLogout}
           className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5"
@@ -1081,6 +1209,7 @@ function ProfileScreen({ role, currentUser, onLogout, showToast }) {
           </div>
           <span className="flex-1 text-left text-[14px] font-semibold" style={{ ...fBody, color: C.danger }}>Log Out</span>
         </button>
+
       </div>
     </div>
   );
@@ -1341,11 +1470,11 @@ function AdminScreen({ showToast }) {
             {users.map((u) => (
               <div key={u.id} className="flex items-center gap-3 rounded-2xl p-3.5" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
                 <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[15px] font-bold" style={{ background: u.status === "flagged" ? C.dangerSoft : C.mint, color: u.status === "flagged" ? C.danger : C.primary }}>
-                  {u.name.charAt(0)}
+                  {u.name?.charAt(0) ?? "?"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{u.name}</div>
+                    <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{u.name || u.email?.split("@")[0] || "Unknown"}</div>
                     {u.role === "admin" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.goldSoft, color: C.gold }}>Admin</span>}
                     {u.status === "flagged" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.dangerSoft, color: C.danger }}>Flagged</span>}
                     {u.status === "suspended" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.dangerSoft, color: C.danger }}>Suspended</span>}
@@ -1360,7 +1489,7 @@ function AdminScreen({ showToast }) {
                       try {
                         await api.updateUser(u.id, { status: newStatus });
                         setUsers((us) => us.map((x) => x.id === u.id ? { ...x, status: newStatus } : x));
-                        showToast(`${u.name} ${newStatus === "suspended" ? "suspended" : "reactivated"}`);
+                        showToast(`${u.name || u.email} ${newStatus === "suspended" ? "suspended" : "reactivated"}`);
                       } catch { showToast("Action failed"); }
                     }}
                     className="shrink-0 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold"
@@ -1967,7 +2096,7 @@ export default function App() {
             {tab === "map" && <MapScreen hostels={hostels} onOpen={(id) => setOpenHostelId(id)} />}
             {tab === "favs" && <FavouritesScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} />}
             {tab === "admin" && role === "admin" && <AdminScreen showToast={showToast} />}
-            {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} />}
+            {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} onOpenChat={() => setChatOpen(true)} />}
           </div>
         )}
       </div>
