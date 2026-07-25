@@ -137,6 +137,38 @@ function PrimaryButton({ children, onClick, icon: Icon, full, variant = "solid",
   );
 }
 
+function Spinner({ size = 32, color }) {
+  const c = color || C.primary;
+  const r = (size - 4) / 2;
+  const circ = 2 * Math.PI * r;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      style={{ animation: "cn-spin 0.9s linear infinite", display: "block", flexShrink: 0 }}
+    >
+      <style>{`@keyframes cn-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}svg{transform-origin:center}`}</style>
+      {/* Track */}
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={c} strokeOpacity={0.18} strokeWidth={3} />
+      {/* Arc */}
+      <circle
+        cx={size/2} cy={size/2} r={r}
+        fill="none" stroke={c} strokeWidth={3}
+        strokeLinecap="round"
+        strokeDasharray={`${circ * 0.72} ${circ * 0.28}`}
+        strokeDashoffset={0}
+      />
+      {/* Arrowhead at arc tail */}
+      <polygon
+        points={`${size/2 + r},${size/2 - 5} ${size/2 + r + 5},${size/2} ${size/2 + r - 2},${size/2 + 4}`}
+        fill={c}
+        transform={`rotate(${360 * 0.72 * -1}, ${size/2}, ${size/2})`}
+      />
+    </svg>
+  );
+}
+
 function Toast({ toast }) {
   if (!toast) return null;
   return (
@@ -360,7 +392,7 @@ function AuthScreen({ onAuthed, showToast }) {
           style={{ background: C.surface, border: `1px solid ${C.line}`, color: C.ink, ...fBody, opacity: googleLoading ? 0.7 : 1 }}
         >
           {googleLoading ? (
-            <Loader2 size={16} className="animate-spin" />
+            <Spinner size={18} color={C.primary} />
           ) : (
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -620,7 +652,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
           style={{ background: C.bg, border: `1.5px solid ${aiMode ? C.primary : C.line}`, transition: "border-color 0.2s" }}
         >
           {aiLoading
-            ? <Loader2 size={16} color={C.primary} className="animate-spin shrink-0" />
+            ? <Spinner size={16} color={C.primary} />
             : aiMode
               ? <Sparkles size={16} color={C.primary} className="shrink-0" />
               : <Search size={16} color={C.inkSoft} className="shrink-0" />
@@ -724,7 +756,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
         )}
         {recsLoading && (
           <div className="flex items-center gap-1.5 mb-3 mt-2">
-            <Loader2 size={12} color={C.primary} className="animate-spin" />
+            <Spinner size={14} color={C.primary} />
             <span className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Finding recommendations…</span>
           </div>
         )}
@@ -916,7 +948,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
               {/* AI Summary Card */}
               {summaryLoading && (
                 <div className="mb-4 flex items-center gap-2 rounded-2xl px-4 py-3" style={{ background: C.mint }}>
-                  <Loader2 size={14} color={C.primary} className="animate-spin shrink-0" />
+                  <Spinner size={16} color={C.primary} />
                   <span className="text-[12px]" style={{ ...fBody, color: C.primaryDark }}>Summarising reviews with AI…</span>
                 </div>
               )}
@@ -1589,8 +1621,8 @@ function AdminScreen({ showToast }) {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center" style={{ background: C.bg }}>
-        <div className="text-[14px]" style={{ ...fBody, color: C.inkSoft }}>Loading…</div>
+      <div className="flex h-full flex-col items-center justify-center gap-3" style={{ background: C.bg }}>
+        <Spinner size={40} />
       </div>
     );
   }
@@ -2462,8 +2494,8 @@ export default function App() {
           <div className="h-full">
             {tab === "home" && (
               hostelLoading ? (
-                <div className="flex h-full items-center justify-center">
-                  <div className="text-[14px]" style={{ ...fBody, color: C.inkSoft }}>Loading hostels…</div>
+                <div className="flex h-full flex-col items-center justify-center gap-3">
+                  <Spinner size={44} />
                 </div>
               ) : (
                 <HomeScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} currentUser={currentUser} favIds={[...favs]} />
