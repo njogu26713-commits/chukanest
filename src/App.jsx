@@ -799,10 +799,10 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
         <img src={hostel.images[imgIdx]} alt="" className="absolute inset-0 h-full w-full object-contain" />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%)" }} />
         <button onClick={onBack} className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.9)" }}>
-          <ArrowLeft size={18} color={C.ink} />
+          <ArrowLeft size={18} color="#14251B" />
         </button>
         <button onClick={() => onToggleFav(hostel.id)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.9)" }}>
-          <Heart size={17} fill={isFav ? C.danger : "none"} color={isFav ? C.danger : C.ink} />
+          <Heart size={17} fill={isFav ? C.danger : "none"} color={isFav ? C.danger : "#14251B"} />
         </button>
         {/* Dots */}
         <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
@@ -813,12 +813,12 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
         {/* Prev/Next */}
         {imgIdx > 0 && (
           <button onClick={() => setImgIdx(i => i - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.85)" }}>
-            <ChevronLeft size={16} color={C.ink} />
+            <ChevronLeft size={16} color="#14251B" />
           </button>
         )}
         {imgIdx < hostel.images.length - 1 && (
           <button onClick={() => setImgIdx(i => i + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.85)" }}>
-            <ChevronRight size={16} color={C.ink} />
+            <ChevronRight size={16} color="#14251B" />
           </button>
         )}
       </div>
