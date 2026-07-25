@@ -5,12 +5,12 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Pencil, LogOut, Mail, Lock,
   BarChart3, Users, LayoutDashboard, TrendingUp, AlertTriangle, CheckCircle2,
   SlidersHorizontal, ImagePlus, Building2, ArrowLeft, Eye, EyeOff, Flag, Clock,
-  ThumbsUp, MoreVertical, Sparkles, Loader2, Bot, Send
+  ThumbsUp, MoreVertical, Sparkles, Loader2, Bot, Send, Moon, Sun
 } from "lucide-react";
 import { api, saveAuth, loadAuth, clearAuth } from "./api.js";
 
 /* ---------------------------------- THEME ---------------------------------- */
-const C = {
+const LIGHT_PALETTE = {
   primary: "#1B6B45",
   primaryDark: "#0F4A30",
   primaryLight: "#2F8F5E",
@@ -25,6 +25,23 @@ const C = {
   danger: "#C1443A",
   dangerSoft: "#FBEAE8",
 };
+const DARK_PALETTE = {
+  primary: "#2F8F5E",
+  primaryDark: "#5BBF8A",
+  primaryLight: "#4CAF7D",
+  mint: "#0D2018",
+  gold: "#F0C040",
+  goldSoft: "#1E1A08",
+  bg: "#0C1610",
+  surface: "#141F18",
+  ink: "#E0EDE5",
+  inkSoft: "#7A9E87",
+  line: "#1E3028",
+  danger: "#E07070",
+  dangerSoft: "#2A1010",
+};
+// Mutable reference — App reassigns before each render so all children see updated colors
+let C = { ...LIGHT_PALETTE };
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;600&display=swap');`;
 
@@ -1950,7 +1967,7 @@ function AdminScreen({ showToast }) {
 
 /* ---------------------------------- NAV ---------------------------------- */
 
-function AppNav({ tab, setTab, role }) {
+function AppNav({ tab, setTab, role, dark, toggleDark }) {
   const tabs = [
     { id: "home", label: "Home", icon: Home },
     { id: "map", label: "Map", icon: Navigation },
@@ -1980,6 +1997,18 @@ function AppNav({ tab, setTab, role }) {
             </button>
           );
         })}
+        {/* Dark mode toggle — mobile */}
+        <button
+          onClick={toggleDark}
+          className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all"
+          style={{ background: "transparent", minWidth: 44 }}
+          title={dark ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {dark
+            ? <Sun size={20} color={C.gold} strokeWidth={1.8} />
+            : <Moon size={20} color={C.inkSoft} strokeWidth={1.8} />}
+          <span className="text-[10px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>{dark ? "Light" : "Dark"}</span>
+        </button>
       </div>
 
       {/* Desktop sidebar */}
@@ -2011,7 +2040,21 @@ function AppNav({ tab, setTab, role }) {
           })}
         </div>
 
-        <div className="px-3 pt-4" style={{ borderTop: `1px solid ${C.line}` }}>
+        <div className="px-3 pt-4 space-y-3" style={{ borderTop: `1px solid ${C.line}` }}>
+          {/* Dark mode toggle — desktop */}
+          <button
+            onClick={toggleDark}
+            className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all"
+            style={{ background: C.mint }}
+            title={dark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {dark
+              ? <Sun size={18} color={C.gold} strokeWidth={1.8} />
+              : <Moon size={18} color={C.primaryDark} strokeWidth={1.8} />}
+            <span className="text-[14px] font-semibold" style={{ ...fBody, color: dark ? C.gold : C.primaryDark }}>
+              {dark ? "Light mode" : "Dark mode"}
+            </span>
+          </button>
           <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Verified student housing</div>
           <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>near Chuka University</div>
         </div>
@@ -2246,7 +2289,19 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [hostelLoading, setHostelLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
+  const [dark, setDark] = useState(() => localStorage.getItem("cn_dark") === "1");
   const toastRef = useRef(null);
+
+  // Apply theme palette before every render so all children read correct colors
+  Object.assign(C, dark ? DARK_PALETTE : LIGHT_PALETTE);
+
+  const toggleDark = () => {
+    setDark((d) => {
+      const next = !d;
+      localStorage.setItem("cn_dark", next ? "1" : "0");
+      return next;
+    });
+  };
 
   // Inject Google Fonts
   useEffect(() => {
@@ -2367,7 +2422,7 @@ export default function App() {
   return (
     <div className="flex h-screen w-full overflow-hidden" style={{ background: C.bg }}>
       <Toast toast={toast} />
-      <AppNav tab={tab} setTab={setTab} role={role} />
+      <AppNav tab={tab} setTab={setTab} role={role} dark={dark} toggleDark={toggleDark} />
 
       {/* Floating AI chat button */}
       {!chatOpen && (
