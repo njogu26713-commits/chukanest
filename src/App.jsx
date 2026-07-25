@@ -224,8 +224,56 @@ function AuthScreen({ onAuthed, showToast }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [adminCode, setAdminCode] = useState("");
+  const [showAdminCode, setShowAdminCode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [authConfig, setAuthConfig] = useState({ googleClientId: null, adminCodeEnabled: false });
+  const googleBtnRef = useRef(null);
+
+  // Load auth config and initialise Google Identity Services
+  useEffect(() => {
+    api.getAuthConfig().then((cfg) => {
+      setAuthConfig(cfg);
+      if (cfg.googleClientId) {
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          window.google.accounts.id.initialize({
+            client_id: cfg.googleClientId,
+            callback: handleGoogleCredential,
+          });
+        };
+        document.head.appendChild(script);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleGoogleCredential = async ({ credential }) => {
+    setGoogleLoading(true);
+    setError("");
+    try {
+      const result = await api.googleLogin(credential, adminCode || undefined);
+      saveAuth(result.token, result.user);
+      showToast(result.user.role === "admin" ? "Welcome, Admin 👋" : "Welcome to ChukaNest!");
+      onAuthed(result.user.role, result.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleClick = () => {
+    if (!authConfig.googleClientId) {
+      setError("Google sign-in is not configured yet. Use email and password for now.");
+      return;
+    }
+    window.google.accounts.id.prompt();
+  };
 
   const handleSubmit = async () => {
     setError("");
@@ -241,7 +289,7 @@ function AuthScreen({ onAuthed, showToast }) {
     try {
       const result = mode === "login"
         ? await api.login(email.trim(), password)
-        : await api.signup(name.trim(), email.trim(), password);
+        : await api.signup(name.trim(), email.trim(), password, adminCode || undefined);
       saveAuth(result.token, result.user);
       showToast(result.user.role === "admin" ? "Welcome, Admin 👋" : mode === "login" ? "Welcome back! 🎉" : "Account created — welcome to ChukaNest!");
       onAuthed(result.user.role, result.user);
@@ -278,13 +326,39 @@ function AuthScreen({ onAuthed, showToast }) {
           {["login", "signup"].map((m) => (
             <button
               key={m}
-              onClick={() => { setMode(m); setError(""); }}
+              onClick={() => { setMode(m); setError(""); setAdminCode(""); setShowAdminCode(false); }}
               className="flex-1 rounded-xl py-2 text-sm font-semibold transition-all"
               style={{ ...fBody, background: mode === m ? C.surface : "transparent", color: mode === m ? C.primaryDark : C.inkSoft, boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}
             >
               {m === "login" ? "Log In" : "Sign Up"}
             </button>
           ))}
+        </div>
+
+        {/* Google sign-in button */}
+        <button
+          onClick={handleGoogleClick}
+          disabled={googleLoading}
+          className="w-full flex items-center justify-center gap-2.5 rounded-2xl py-2.5 text-sm font-semibold border transition-all mb-4"
+          style={{ background: C.surface, border: `1px solid ${C.line}`, color: C.ink, ...fBody, opacity: googleLoading ? 0.7 : 1 }}
+        >
+          {googleLoading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+              <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+          )}
+          Continue with Google
+        </button>
+
+        <div className="mb-4 flex items-center gap-3">
+          <div className="h-px flex-1" style={{ background: C.line }} />
+          <span className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>or</span>
+          <div className="h-px flex-1" style={{ background: C.line }} />
         </div>
 
         <div className="space-y-3">
@@ -303,6 +377,32 @@ function AuthScreen({ onAuthed, showToast }) {
             <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full bg-transparent text-sm outline-none" style={fBody} onKeyDown={(e) => e.key === "Enter" && handleSubmit()} />
             <button onClick={() => setShowPw((s) => !s)}>{showPw ? <EyeOff size={16} color={C.inkSoft} /> : <Eye size={16} color={C.inkSoft} />}</button>
           </div>
+
+          {/* Admin invite code — shown on signup when toggled */}
+          {mode === "signup" && (
+            <div>
+              <button
+                type="button"
+                onClick={() => { setShowAdminCode((s) => !s); setAdminCode(""); }}
+                className="text-[11px] font-medium"
+                style={{ ...fBody, color: C.inkSoft }}
+              >
+                {showAdminCode ? "▲ Hide admin code" : "▾ Register as admin?"}
+              </button>
+              {showAdminCode && (
+                <div className="mt-2 flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.goldSoft, border: `1px solid ${C.gold}` }}>
+                  <ShieldCheck size={16} color={C.gold} />
+                  <input
+                    value={adminCode}
+                    onChange={(e) => setAdminCode(e.target.value)}
+                    placeholder="Admin invite code"
+                    className="w-full bg-transparent text-sm outline-none"
+                    style={{ ...fBody, color: C.ink }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {error && (
@@ -315,21 +415,6 @@ function AuthScreen({ onAuthed, showToast }) {
           <PrimaryButton full onClick={handleSubmit} disabled={loading}>
             {loading ? "Please wait…" : mode === "login" ? "Log In" : "Create Account"}
           </PrimaryButton>
-        </div>
-
-        <div className="my-4 flex items-center gap-3">
-          <div className="h-px flex-1" style={{ background: C.line }} />
-          <span className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>demo accounts</span>
-          <div className="h-px flex-1" style={{ background: C.line }} />
-        </div>
-
-        <div className="space-y-2 text-[11px]" style={{ ...fBody, color: C.inkSoft }}>
-          <div className="rounded-xl px-3 py-2" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
-            <span className="font-semibold">Admin:</span> admin@chukanest.co.ke / Admin1234!
-          </div>
-          <div className="rounded-xl px-3 py-2" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
-            <span className="font-semibold">Student:</span> faith@students.chuka.ac.ke / Student123!
-          </div>
         </div>
 
         <button onClick={() => { showToast("Continuing as guest"); onAuthed("guest", null); }} className="mt-4 w-full text-center text-[13px] font-semibold" style={{ ...fBody, color: C.primaryDark }}>

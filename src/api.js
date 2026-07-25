@@ -27,7 +27,9 @@ const normArr = (arr) => (Array.isArray(arr) ? arr.map(norm) : arr);
 export const api = {
   // Auth
   login: (email, password) => req("POST", "/auth/login", { email, password }),
-  signup: (name, email, password) => req("POST", "/auth/signup", { name, email, password }),
+  signup: (name, email, password, adminCode) => req("POST", "/auth/signup", { name, email, password, adminCode }),
+  googleLogin: (credential, adminCode) => req("POST", "/auth/google", { credential, adminCode }),
+  getAuthConfig: () => req("GET", "/auth/config"),
 
   // Hostels
   getHostels: (status) =>
