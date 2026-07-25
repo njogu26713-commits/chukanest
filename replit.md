@@ -24,6 +24,7 @@ Both the Vite dev server (port 5000) and Express API (port 3001) start concurren
 |-----|-------------|
 | `MONGODB_URI` | MongoDB Atlas connection string |
 | `SESSION_SECRET` | JWT signing secret |
+| `GROQ_API_KEY` | Groq API key for AI search, recommendations, and chat |
 
 ## Project structure
 
