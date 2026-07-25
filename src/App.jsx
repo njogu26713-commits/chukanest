@@ -796,7 +796,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
       {/* Image carousel */}
       <div className="relative w-full" style={{ aspectRatio: "1 / 1", flexShrink: 0 }}>
-        <img src={hostel.images[imgIdx]} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={hostel.images[imgIdx]} alt="" className="absolute inset-0 h-full w-full object-contain" />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%)" }} />
         <button onClick={onBack} className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.9)" }}>
           <ArrowLeft size={18} color={C.ink} />
