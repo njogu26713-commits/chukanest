@@ -972,8 +972,8 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
 
       {/* CTA */}
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 md:left-[220px] flex gap-2.5 px-4 pb-2 pt-2" style={{ background: C.surface, borderTop: `1px solid ${C.line}`, zIndex: 20 }}>
-        <PrimaryButton variant="ghost" icon={Phone} onClick={() => showToast(`Calling ${hostel.landlord}…`)}>Call</PrimaryButton>
-        <PrimaryButton full icon={MessageCircle} onClick={() => showToast("Opening chat…")}>Contact Landlord</PrimaryButton>
+        <PrimaryButton variant="ghost" icon={Phone} onClick={() => window.open(`tel:${hostel.phone}`, "_self")}>Call</PrimaryButton>
+        <PrimaryButton full icon={MessageCircle} onClick={() => window.open(`https://wa.me/${hostel.phone.replace(/\D/g, "").replace(/^0/, "254")}`, "_blank")}>Contact Landlord</PrimaryButton>
       </div>
     </div>
   );
