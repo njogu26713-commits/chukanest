@@ -1300,6 +1300,224 @@ function ProfileScreen({ role, currentUser, onLogout, showToast, onOpenChat }) {
   );
 }
 
+/* ---------------------------------- HOSTEL FORM MODAL ---------------------------------- */
+
+const AMENITY_OPTIONS = [
+  { key: "wifi", label: "Wi-Fi" },
+  { key: "water", label: "Water" },
+  { key: "power", label: "Power" },
+  { key: "security", label: "Security" },
+  { key: "parking", label: "Parking" },
+  { key: "laundry", label: "Laundry" },
+  { key: "study", label: "Study room" },
+  { key: "cctv", label: "CCTV" },
+];
+
+function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
+  const isEdit = !!hostel;
+  const empty = {
+    name: "", landlord: "", phone: "", gender: "Female", roomType: "Bedsitter",
+    price: "", distance: "", availableRooms: "", description: "",
+    images: "", amenities: [], status: "active",
+  };
+
+  const toForm = (h) => ({
+    name: h.name ?? "",
+    landlord: h.landlord ?? "",
+    phone: h.phone ?? "",
+    gender: h.gender ?? "Female",
+    roomType: h.roomType ?? "Bedsitter",
+    price: h.price ?? "",
+    distance: h.distance ?? "",
+    availableRooms: h.availableRooms ?? "",
+    description: h.description ?? "",
+    images: Array.isArray(h.images) ? h.images.join(", ") : (h.images ?? ""),
+    amenities: h.amenities ?? [],
+    status: h.status ?? "active",
+  });
+
+  const [form, setForm] = useState(isEdit ? toForm(hostel) : empty);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const toggleAmenity = (key) => {
+    set("amenities", form.amenities.includes(key)
+      ? form.amenities.filter((a) => a !== key)
+      : [...form.amenities, key]);
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim() || !form.landlord.trim() || !form.phone.trim()) {
+      setError("Name, landlord and phone are required");
+      return;
+    }
+    if (!form.price || !form.distance) {
+      setError("Price and distance are required");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const payload = {
+        ...form,
+        price: Number(form.price),
+        distance: Number(form.distance),
+        availableRooms: Number(form.availableRooms) || 0,
+        images: form.images.split(",").map((s) => s.trim()).filter(Boolean),
+      };
+      const saved = isEdit
+        ? await api.updateHostel(hostel.id, payload)
+        : await api.createHostel(payload);
+      onSaved(saved, isEdit);
+      showToast(isEdit ? `${saved.name} updated ✓` : `${saved.name} added ✓`);
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const labelStyle = { ...fBody, color: C.inkSoft, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" };
+  const inputStyle = { ...fBody, background: C.bg, border: `1px solid ${C.line}`, borderRadius: 14, padding: "10px 14px", fontSize: 13, color: C.ink, width: "100%", outline: "none" };
+  const selectStyle = { ...inputStyle, appearance: "none", cursor: "pointer" };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full md:max-w-lg max-h-[90vh] flex flex-col rounded-t-3xl md:rounded-3xl overflow-hidden" style={{ background: C.surface }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: C.line }}>
+          <div className="text-[16px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>
+            {isEdit ? "Edit Listing" : "Add Listing"}
+          </div>
+          <button onClick={onClose} className="rounded-xl p-1.5" style={{ background: C.mint }}>
+            <X size={18} color={C.primaryDark} />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+          {/* Name */}
+          <div>
+            <div className="mb-1.5" style={labelStyle}>Hostel name *</div>
+            <input style={inputStyle} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Greenview Hostel" />
+          </div>
+
+          {/* Landlord + Phone */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="mb-1.5" style={labelStyle}>Landlord *</div>
+              <input style={inputStyle} value={form.landlord} onChange={(e) => set("landlord", e.target.value)} placeholder="Full name" />
+            </div>
+            <div>
+              <div className="mb-1.5" style={labelStyle}>Phone *</div>
+              <input style={inputStyle} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="07XX XXX XXX" />
+            </div>
+          </div>
+
+          {/* Gender + Room type */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="mb-1.5" style={labelStyle}>Gender</div>
+              <select style={selectStyle} value={form.gender} onChange={(e) => set("gender", e.target.value)}>
+                {["Female", "Male", "Mixed"].map((g) => <option key={g}>{g}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="mb-1.5" style={labelStyle}>Room type</div>
+              <select style={selectStyle} value={form.roomType} onChange={(e) => set("roomType", e.target.value)}>
+                {["Bedsitter", "Single", "Shared"].map((r) => <option key={r}>{r}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Price + Distance + Rooms */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <div className="mb-1.5" style={labelStyle}>Price (KES) *</div>
+              <input style={inputStyle} type="number" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="4500" />
+            </div>
+            <div>
+              <div className="mb-1.5" style={labelStyle}>Distance (km) *</div>
+              <input style={inputStyle} type="number" step="0.1" value={form.distance} onChange={(e) => set("distance", e.target.value)} placeholder="0.5" />
+            </div>
+            <div>
+              <div className="mb-1.5" style={labelStyle}>Rooms</div>
+              <input style={inputStyle} type="number" value={form.availableRooms} onChange={(e) => set("availableRooms", e.target.value)} placeholder="10" />
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <div className="mb-1.5" style={labelStyle}>Status</div>
+            <select style={selectStyle} value={form.status} onChange={(e) => set("status", e.target.value)}>
+              {["active", "pending", "rejected"].map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+
+          {/* Amenities */}
+          <div>
+            <div className="mb-2" style={labelStyle}>Amenities</div>
+            <div className="flex flex-wrap gap-2">
+              {AMENITY_OPTIONS.map(({ key, label }) => {
+                const on = form.amenities.includes(key);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => toggleAmenity(key)}
+                    className="rounded-xl px-3 py-1.5 text-[12px] font-semibold transition-all"
+                    style={{ ...fBody, background: on ? C.primary : C.mint, color: on ? "#fff" : C.primaryDark }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <div className="mb-1.5" style={labelStyle}>Description</div>
+            <textarea
+              style={{ ...inputStyle, resize: "vertical", minHeight: 72 }}
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
+              placeholder="Brief description of the hostel…"
+            />
+          </div>
+
+          {/* Image URLs */}
+          <div>
+            <div className="mb-1.5" style={labelStyle}>Image URLs <span style={{ fontWeight: 400, textTransform: "none" }}>(comma-separated)</span></div>
+            <textarea
+              style={{ ...inputStyle, resize: "vertical", minHeight: 56 }}
+              value={form.images}
+              onChange={(e) => set("images", e.target.value)}
+              placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"
+            />
+          </div>
+
+          {error && (
+            <div className="rounded-xl px-3 py-2 text-[12px] font-medium" style={{ background: C.dangerSoft, color: C.danger, ...fBody }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t shrink-0" style={{ borderColor: C.line }}>
+          <PrimaryButton full onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Listing"}
+          </PrimaryButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------- ADMIN SCREEN ---------------------------------- */
 
 function AdminScreen({ showToast }) {
@@ -1309,6 +1527,7 @@ function AdminScreen({ showToast }) {
   const [flagged, setFlagged] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hostelModal, setHostelModal] = useState(null); // null | { hostel: null } | { hostel: <obj> }
 
   useEffect(() => {
     const load = async () => {
@@ -1490,7 +1709,7 @@ function AdminScreen({ showToast }) {
           <div className="px-4 py-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>{listings.length} listings total</div>
-              <button onClick={() => showToast("Add listing coming soon")} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-semibold" style={{ background: C.primary, color: "#fff", ...fBody }}>
+              <button onClick={() => setHostelModal({ hostel: null })} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-semibold" style={{ background: C.primary, color: "#fff", ...fBody }}>
                 <Plus size={13} /> Add Listing
               </button>
             </div>
@@ -1511,7 +1730,7 @@ function AdminScreen({ showToast }) {
                   </div>
                 </div>
                 <div className="flex border-t" style={{ borderColor: C.line }}>
-                  <button onClick={() => showToast(`Editing ${h.name}…`)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                  <button onClick={() => setHostelModal({ hostel: h })} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
                     <Pencil size={13} /> Edit
                   </button>
                   {!h.verified && (
@@ -1708,6 +1927,23 @@ function AdminScreen({ showToast }) {
           </div>
         )}
       </div>
+
+      {/* ── HOSTEL FORM MODAL ── */}
+      {hostelModal && (
+        <HostelFormModal
+          hostel={hostelModal.hostel}
+          onClose={() => setHostelModal(null)}
+          onSaved={(saved, isEdit) => {
+            const norm = { ...saved, id: saved._id ?? saved.id };
+            if (isEdit) {
+              setListings((l) => l.map((x) => x.id === norm.id ? norm : x));
+            } else {
+              setListings((l) => [...l, norm]);
+            }
+          }}
+          showToast={showToast}
+        />
+      )}
     </div>
   );
 }

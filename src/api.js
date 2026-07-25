@@ -35,6 +35,7 @@ export const api = {
   getHostels: (status) =>
     req("GET", `/hostels${status ? `?status=${status}` : ""}`).then(normArr),
   getHostel: (id) => req("GET", `/hostels/${id}`).then(norm),
+  createHostel: (data) => req("POST", "/hostels", data).then(norm),
   updateHostel: (id, data) => req("PATCH", `/hostels/${id}`, data).then(norm),
   deleteHostel: (id) => req("DELETE", `/hostels/${id}`),
 
