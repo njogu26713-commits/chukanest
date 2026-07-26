@@ -1,0 +1,1 @@
+- [External npm installs](imported-lockfiles.md) — regenerate imported lockfiles when private Replit registry URLs would break non-Replit builds.
