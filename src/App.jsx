@@ -107,7 +107,7 @@ function Chip({ active, onClick, children, icon: Icon }) {
 function Badge({ children, tone = "neutral" }) {
   const tones = {
     neutral: { bg: C.mint, color: C.primaryDark },
-    gold: { bg: C.goldSoft, color: "#8A6D0C" },
+    gold: { bg: C.goldSoft, color: C.gold },
     danger: { bg: C.dangerSoft, color: C.danger },
   };
   const t = tones[tone];
@@ -803,7 +803,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
             onKeyDown={(e) => { if (e.key === "Enter" && aiMode) handleAiSearch(); }}
             placeholder={aiMode ? "Describe what you're looking for…" : "Search hostels, room types…"}
             className="w-full bg-transparent text-sm outline-none"
-            style={fBody}
+            style={{ ...fBody, color: C.ink }}
           />
           {(search || aiFilters) && (
             <button onClick={clearAiSearch}><X size={14} color={C.inkSoft} /></button>
@@ -2657,7 +2657,7 @@ export default function App() {
 
   if (!role) {
     return (
-      <div className="h-screen w-full overflow-hidden" style={{ background: C.primaryDark }}>
+      <div className="h-screen w-full overflow-hidden" style={{ background: C.primaryDark, color: C.ink }}>
         <Toast toast={toast} />
         <div className="md:hidden h-full overflow-y-auto" style={{ background: `linear-gradient(180deg, ${C.primaryDark} 0%, ${C.primary} 40%, ${C.bg} 40%)` }}>
           <AuthScreen onAuthed={handleAuthed} showToast={showToast} />
@@ -2670,7 +2670,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden" style={{ background: C.bg }}>
+    <div className="flex h-screen w-full overflow-hidden" style={{ background: C.bg, color: C.ink }}>
       <Toast toast={toast} />
       <AppNav tab={tab} setTab={setTab} role={role} dark={dark} toggleDark={toggleDark} />
 
