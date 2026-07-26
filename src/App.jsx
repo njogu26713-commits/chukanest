@@ -2311,8 +2311,8 @@ function ChatSidebar({ onClose, role }) {
 /* ---------------------------------- APP ROOT ---------------------------------- */
 
 export default function App() {
-  const [role, setRole] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [role, setRole] = useState(() => { const s = loadAuth(); return s?.user?.role ?? null; });
+  const [currentUser, setCurrentUser] = useState(() => { const s = loadAuth(); return s?.user ?? null; });
   const [tab, setTab] = useState("home");
   const [openHostelId, setOpenHostelId] = useState(null);
   const [hostels, setHostels] = useState([]);
@@ -2343,14 +2343,6 @@ export default function App() {
     return () => document.head.removeChild(style);
   }, []);
 
-  // Restore auth from localStorage on mount
-  useEffect(() => {
-    const saved = loadAuth();
-    if (saved) {
-      setRole(saved.user.role);
-      setCurrentUser(saved.user);
-    }
-  }, []);
 
   // Fetch hostels when authenticated
   useEffect(() => {
