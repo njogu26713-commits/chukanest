@@ -285,14 +285,56 @@ function TopBar({ title, onBack, right }) {
 /* ---------------------------------- HOSTEL CARD ---------------------------------- */
 
 function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
+  const [imgIdx, setImgIdx] = useState(0);
+  const touchStartX = useRef(null);
+  const swiped = useRef(false);
+
+  const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; swiped.current = false; };
+  const onTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 30) {
+      swiped.current = true;
+      if (dx < 0 && imgIdx < hostel.images.length - 1) setImgIdx(i => i + 1);
+      if (dx > 0 && imgIdx > 0) setImgIdx(i => i - 1);
+    }
+    touchStartX.current = null;
+  };
+
   return (
-    <button
-      onClick={() => onOpen(hostel.id)}
-      className="w-full overflow-hidden rounded-3xl text-left transition-transform active:scale-[0.98]"
+    <div
+      className="w-full overflow-hidden rounded-3xl text-left"
       style={{ background: C.surface, border: `1px solid ${C.line}`, boxShadow: "0 2px 10px rgba(20,37,27,0.05)" }}
     >
-      <div className="relative">
-        <img src={hostel.images[0]} alt={hostel.name} className="w-full object-cover" style={{ aspectRatio: "1 / 1" }} />
+      {/* Image slider */}
+      <div
+        className="relative overflow-hidden"
+        style={{ aspectRatio: "1 / 1", cursor: "pointer" }}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onClick={() => { if (!swiped.current) onOpen(hostel.id); }}
+      >
+        {/* Sliding track */}
+        <div
+          style={{
+            display: "flex",
+            width: `${hostel.images.length * 100}%`,
+            height: "100%",
+            transform: `translateX(-${(imgIdx / hostel.images.length) * 100}%)`,
+            transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)",
+          }}
+        >
+          {hostel.images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={hostel.name}
+              style={{ width: `${100 / hostel.images.length}%`, height: "100%", objectFit: "cover", flexShrink: 0 }}
+            />
+          ))}
+        </div>
+
+        {/* Fav button */}
         <button
           onClick={(e) => { e.stopPropagation(); onToggleFav(hostel.id); }}
           className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full active:scale-90 transition-transform"
@@ -300,17 +342,40 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
         >
           <Heart size={17} fill={isFav ? C.danger : "none"} color={isFav ? C.danger : C.ink} />
         </button>
+
         {hostel.verified && (
           <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: "rgba(255,255,255,0.95)" }}>
             <VerifiedSeal size="sm" />
             <span className="text-[11px] font-bold" style={{ ...fBody, color: "#8A6D0C" }}>Verified</span>
           </div>
         )}
+
+        {/* Dot indicators */}
+        {hostel.images.length > 1 && (
+          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1">
+            {hostel.images.map((_, i) => (
+              <span
+                key={i}
+                style={{
+                  display: "block",
+                  height: 5,
+                  width: i === imgIdx ? 16 : 5,
+                  borderRadius: 9,
+                  background: i === imgIdx ? "#fff" : "rgba(255,255,255,0.55)",
+                  transition: "width 0.25s, background 0.25s",
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         <div className="absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: C.ink, color: "#fff", ...fMono }}>
           {hostel.availableRooms} rooms left
         </div>
       </div>
-      <div className="p-3.5">
+
+      {/* Info — tapping here also opens the hostel */}
+      <div className="p-3.5 cursor-pointer" onClick={() => onOpen(hostel.id)}>
         <div className="flex items-start justify-between gap-2">
           <div className="text-[15px] font-bold leading-tight" style={{ ...fDisplay, color: C.ink }}>{hostel.name}</div>
           <div className="flex shrink-0 items-center gap-1">
@@ -328,7 +393,7 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
           <Badge>{hostel.roomType}</Badge>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -891,34 +956,93 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
 
   const hostelReviews = reviews || [];
 
+  const detailTouchStartX = useRef(null);
+
+  const onDetailTouchStart = (e) => { detailTouchStartX.current = e.touches[0].clientX; };
+  const onDetailTouchEnd = (e) => {
+    if (detailTouchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - detailTouchStartX.current;
+    if (dx < -40 && imgIdx < hostel.images.length - 1) setImgIdx(i => i + 1);
+    if (dx > 40  && imgIdx > 0) setImgIdx(i => i - 1);
+    detailTouchStartX.current = null;
+  };
+
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
       {/* Image carousel */}
-      <div className="relative w-full" style={{ aspectRatio: "1 / 1", flexShrink: 0 }}>
-        <img src={hostel.images[imgIdx]} alt="" className="absolute inset-0 h-full w-full object-contain" />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%)" }} />
+      <div
+        className="relative w-full overflow-hidden"
+        style={{ aspectRatio: "1 / 1", flexShrink: 0 }}
+        onTouchStart={onDetailTouchStart}
+        onTouchEnd={onDetailTouchEnd}
+      >
+        {/* Sliding track */}
+        <div
+          style={{
+            display: "flex",
+            width: `${hostel.images.length * 100}%`,
+            height: "100%",
+            transform: `translateX(-${(imgIdx / hostel.images.length) * 100}%)`,
+            transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)",
+          }}
+        >
+          {hostel.images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt=""
+              style={{ width: `${100 / hostel.images.length}%`, height: "100%", objectFit: "cover", flexShrink: 0 }}
+            />
+          ))}
+        </div>
+
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.32) 0%, transparent 38%)" }} />
+
+        {/* Back + Fav */}
         <button onClick={onBack} className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.9)" }}>
           <ArrowLeft size={18} color="#14251B" />
         </button>
         <button onClick={() => onToggleFav(hostel.id)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.9)" }}>
           <Heart size={17} fill={isFav ? C.danger : "none"} color={isFav ? C.danger : "#14251B"} />
         </button>
-        {/* Dots */}
-        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-          {hostel.images.map((_, i) => (
-            <button key={i} onClick={() => setImgIdx(i)} className="h-1.5 rounded-full transition-all" style={{ width: i === imgIdx ? 20 : 6, background: i === imgIdx ? "#fff" : "rgba(255,255,255,0.5)" }} />
-          ))}
+
+        {/* Counter badge */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: "rgba(0,0,0,0.45)", color: "#fff", ...fBody }}>
+          {imgIdx + 1} / {hostel.images.length}
         </div>
-        {/* Prev/Next */}
+
+        {/* Prev/Next arrows */}
         {imgIdx > 0 && (
-          <button onClick={() => setImgIdx(i => i - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.85)" }}>
-            <ChevronLeft size={16} color="#14251B" />
+          <button onClick={() => setImgIdx(i => i - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full transition-all active:scale-90" style={{ background: "rgba(255,255,255,0.88)" }}>
+            <ChevronLeft size={18} color="#14251B" />
           </button>
         )}
         {imgIdx < hostel.images.length - 1 && (
-          <button onClick={() => setImgIdx(i => i + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.85)" }}>
-            <ChevronRight size={16} color="#14251B" />
+          <button onClick={() => setImgIdx(i => i + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full transition-all active:scale-90" style={{ background: "rgba(255,255,255,0.88)" }}>
+            <ChevronRight size={18} color="#14251B" />
           </button>
+        )}
+
+        {/* Dot indicators */}
+        {hostel.images.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+            {hostel.images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setImgIdx(i)}
+                style={{
+                  height: 6,
+                  width: i === imgIdx ? 22 : 6,
+                  borderRadius: 9,
+                  background: i === imgIdx ? "#fff" : "rgba(255,255,255,0.5)",
+                  transition: "width 0.25s, background 0.25s",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                }}
+              />
+            ))}
+          </div>
         )}
       </div>
 
