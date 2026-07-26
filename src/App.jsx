@@ -169,6 +169,73 @@ function Spinner({ size = 32, color }) {
   );
 }
 
+/* ---------------------------------- SKELETON ---------------------------------- */
+
+function Sk({ w = "100%", h = 16, r = 10, className = "" }) {
+  return (
+    <div
+      className={className}
+      style={{
+        width: w, height: h, borderRadius: r,
+        background: `linear-gradient(90deg, ${C.line}55 25%, ${C.line}22 50%, ${C.line}55 75%)`,
+        backgroundSize: "200% 100%",
+        animation: "cn-shimmer 1.4s ease-in-out infinite",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+// Global shimmer keyframe — injected once into <head>
+if (typeof document !== "undefined" && !document.getElementById("cn-skeleton-style")) {
+  const s = document.createElement("style");
+  s.id = "cn-skeleton-style";
+  s.textContent = `@keyframes cn-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`;
+  document.head.appendChild(s);
+}
+
+function HostelCardSkeleton() {
+  const shimmer = {
+    background: `linear-gradient(90deg, ${C.line}55 25%, ${C.line}22 50%, ${C.line}55 75%)`,
+    backgroundSize: "200% 100%",
+    animation: "cn-shimmer 1.4s ease-in-out infinite",
+  };
+  return (
+    <div className="w-full overflow-hidden rounded-3xl" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+      {/* Square image placeholder */}
+      <div style={{ aspectRatio: "1/1", width: "100%", ...shimmer }} />
+      <div className="p-3.5 space-y-2.5">
+        <div className="flex justify-between items-start gap-2">
+          <Sk w="62%" h={15} r={8} />
+          <Sk w={38} h={14} r={8} />
+        </div>
+        <Sk w="78%" h={12} r={7} />
+        <div className="flex justify-between items-center pt-1">
+          <Sk w={82} h={16} r={8} />
+          <Sk w={62} h={22} r={11} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewItemSkeleton() {
+  return (
+    <div className="rounded-xl p-3 space-y-2" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+      <div className="flex items-center gap-2">
+        <Sk w={32} h={32} r={8} />
+        <div className="flex-1 space-y-1.5">
+          <Sk w="55%" h={12} r={6} />
+          <Sk w={72} h={10} r={5} />
+        </div>
+        <Sk w={48} h={10} r={5} />
+      </div>
+      <Sk w="90%" h={11} r={5} />
+      <Sk w="70%" h={11} r={5} />
+    </div>
+  );
+}
+
 function Toast({ toast }) {
   if (!toast) return null;
   return (
@@ -1261,9 +1328,8 @@ function ProfileScreen({ role, currentUser, onLogout, showToast, onOpenChat }) {
           <MenuItem id="reviews" label="My Reviews" icon={Star}>
             <div className="px-4 py-3">
               {reviewsLoading && (
-                <div className="flex items-center gap-2 py-2">
-                  <Loader2 size={14} color={C.primary} className="animate-spin" />
-                  <span className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>Loading your reviews…</span>
+                <div className="space-y-3 py-1">
+                  {Array.from({ length: 3 }).map((_, i) => <ReviewItemSkeleton key={i} />)}
                 </div>
               )}
               {myReviews && myReviews.length === 0 && (
@@ -2486,8 +2552,10 @@ export default function App() {
           <div className="h-full">
             {tab === "home" && (
               hostelLoading ? (
-                <div className="flex h-full flex-col items-center justify-center gap-3">
-                  <Spinner size={44} />
+                <div className="h-full overflow-y-auto px-4 pt-4 pb-24">
+                  <div className="grid grid-cols-2 gap-3">
+                    {Array.from({ length: 6 }).map((_, i) => <HostelCardSkeleton key={i} />)}
+                  </div>
                 </div>
               ) : (
                 <HomeScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} currentUser={currentUser} favIds={[...favs]} />
