@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "concurrently \"vite --port 5000 --host\" \"node server/index.js\"",
     "dev:client": "vite --port 5000 --host",
-    "dev:server": "node server/index.js"
+    "dev:server": "node server/index.js",
+    "build": "vite build",
+    "start": "node server/index.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

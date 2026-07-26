@@ -9,7 +9,7 @@ A hostel-finder web app for Chuka University students in Kenya. Students can bro
 - **Database**: MongoDB (via Mongoose)
 - **Auth**: JWT (`SESSION_SECRET` env var)
 
-## Running the app
+## Running the app locally
 
 ```bash
 npm install
@@ -17,6 +17,30 @@ npm run dev
 ```
 
 Both the Vite dev server (port 5000) and Express API (port 3001) start concurrently. The Vite proxy forwards all `/api/*` requests to Express.
+
+## Deploying to Railway
+
+This project is configured as a single Railway web service. Railway should use:
+
+```bash
+npm install
+npm run build
+npm start
+```
+
+The Express server serves the compiled Vite frontend and API from one port. Railway provides that port through `PORT`.
+
+Add these variables to the Railway service before deploying:
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `MONGODB_URI` | Yes | MongoDB Atlas connection string |
+| `SESSION_SECRET` | Yes | Long random JWT signing secret |
+| `GROQ_API_KEY` | No | Enables AI search, recommendations, and chat |
+| `GOOGLE_CLIENT_ID` | No | Enables Google sign-in |
+| `ADMIN_INVITE_CODE` | No | Enables admin account registration |
+
+The first server start seeds the MongoDB database when the `hostels` collection is empty.
 
 ## Environment secrets
 

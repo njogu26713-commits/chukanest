@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { connectDB } from "./db.js";
 import { seedIfEmpty } from "./seed.js";
 import authRoutes from "./routes/auth.js";
@@ -13,6 +15,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientDist = path.resolve(__dirname, "../dist");
+
 app.use("/api/auth", authRoutes);
 app.use("/api/hostels/:hostelId/reviews", reviewRoutes);
 app.use("/api/hostels", hostelRoutes);
@@ -22,7 +27,15 @@ app.use("/api/users", userRoutes);
 app.use("/api/ai", aiRoutes);
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
-const PORT = process.env.API_PORT || 3001;
+app.use(express.static(clientDist));
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api/")) return next();
+  res.sendFile(path.join(clientDist, "index.html"), (err) => {
+    if (err) next();
+  });
+});
+
+const PORT = process.env.PORT || process.env.API_PORT || 3001;
 
 connectDB()
   .then(() => seedIfEmpty())
