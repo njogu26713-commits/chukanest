@@ -1569,7 +1569,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   const empty = {
     name: "", landlord: "", phone: "", gender: "Female", roomType: "Bedsitter",
     price: "", distance: "", availableRooms: "", description: "",
-    images: "", amenities: [], status: "active",
+    amenities: [], status: "active",
   };
 
   const toForm = (h) => ({
@@ -1582,16 +1582,37 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
     distance: h.distance ?? "",
     availableRooms: h.availableRooms ?? "",
     description: h.description ?? "",
-    images: Array.isArray(h.images) ? h.images.join(", ") : (h.images ?? ""),
     amenities: h.amenities ?? [],
     status: h.status ?? "active",
   });
 
   const [form, setForm] = useState(isEdit ? toForm(hostel) : empty);
+  // imageUrls: already-uploaded URLs (existing on edit, or newly uploaded)
+  const [imageUrls, setImageUrls] = useState(isEdit ? (hostel.images ?? []) : []);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const fileInputRef = useRef(null);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setUploading(true);
+    setError("");
+    try {
+      const urls = await api.uploadImages(files);
+      setImageUrls((prev) => [...prev, ...urls]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const removeImage = (idx) => setImageUrls((prev) => prev.filter((_, i) => i !== idx));
 
   const toggleAmenity = (key) => {
     set("amenities", form.amenities.includes(key)
@@ -1616,7 +1637,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
         price: Number(form.price),
         distance: Number(form.distance),
         availableRooms: Number(form.availableRooms) || 0,
-        images: form.images.split(",").map((s) => s.trim()).filter(Boolean),
+        images: imageUrls,
       };
       const saved = isEdit
         ? await api.updateHostel(hostel.id, payload)
@@ -1740,15 +1761,46 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
             />
           </div>
 
-          {/* Image URLs */}
+          {/* Image Upload */}
           <div>
-            <div className="mb-1.5" style={labelStyle}>Image URLs <span style={{ fontWeight: 400, textTransform: "none" }}>(comma-separated)</span></div>
-            <textarea
-              style={{ ...inputStyle, resize: "vertical", minHeight: 56 }}
-              value={form.images}
-              onChange={(e) => set("images", e.target.value)}
-              placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"
+            <div className="mb-2" style={labelStyle}>Photos</div>
+            {/* Previews */}
+            {imageUrls.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {imageUrls.map((url, idx) => (
+                  <div key={idx} className="relative rounded-xl overflow-hidden shrink-0" style={{ width: 72, height: 72 }}>
+                    <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="absolute top-0.5 right-0.5 rounded-full flex items-center justify-center"
+                      style={{ background: "rgba(0,0,0,0.55)", width: 20, height: 20 }}
+                    >
+                      <X size={11} color="#fff" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Upload button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={handleFileChange}
             />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all"
+              style={{ ...fBody, background: C.mint, color: C.primaryDark, opacity: uploading ? 0.6 : 1, border: `1.5px dashed ${C.primary}` }}
+            >
+              <ImagePlus size={16} />
+              {uploading ? "Uploading…" : imageUrls.length > 0 ? "Add more photos" : "Choose photos"}
+            </button>
           </div>
 
           {error && (

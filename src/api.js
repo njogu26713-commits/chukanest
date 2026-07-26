@@ -52,6 +52,20 @@ export const api = {
   aiSummarize: (hostelId) => req("POST", `/ai/summarize/${hostelId}`),
   aiRecommend: (data) => req("POST", "/ai/recommend", data),
 
+  // Upload
+  uploadImages: async (files) => {
+    const fd = new FormData();
+    for (const f of files) fd.append("images", f);
+    const res = await fetch(`${BASE}/upload/images`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Upload failed");
+    return data.urls; // string[]
+  },
+
   // Users
   getUsers: () => req("GET", "/users").then(normArr),
   updateUser: (id, data) => req("PATCH", `/users/${id}`, data).then(norm),
