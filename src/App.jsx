@@ -2067,9 +2067,10 @@ function AdminScreen({ showToast }) {
 
 function AppNav({ tab, setTab, role, dark, toggleDark }) {
   const tabs = [
-    { id: "home", label: "Home", icon: Home },
-    { id: "map", label: "Map", icon: Navigation },
-    { id: "favs", label: "Saved", icon: Heart },
+    { id: "home",    label: "Home",    icon: Home },
+    { id: "map",     label: "Map",     icon: Navigation },
+    { id: "favs",    label: "Saved",   icon: Heart },
+    { id: "ai",      label: "Ask AI",  icon: Bot },
     ...(role === "admin" ? [{ id: "admin", label: "Admin", icon: LayoutDashboard }] : []),
     { id: "profile", label: "Profile", icon: User },
   ];
@@ -2161,9 +2162,9 @@ function AppNav({ tab, setTab, role, dark, toggleDark }) {
   );
 }
 
-/* ────────────────────────── AI CHAT SIDEBAR ────────────────────────── */
+/* ────────────────────────── AI CHAT PAGE ────────────────────────── */
 
-function ChatSidebar({ onClose, role }) {
+function AiScreen({ role }) {
   const GREETING = "Hi! 👋 I'm your ChukaNest assistant. Tell me what you're looking for — budget, room type, gender preference — and I'll point you to the right hostel.";
   const [messages, setMessages] = useState([{ role: "assistant", content: GREETING }]);
   const [input, setInput] = useState("");
@@ -2240,32 +2241,19 @@ function ChatSidebar({ onClose, role }) {
   ];
 
   return (
-    /* Backdrop */
-    <div className="fixed inset-0 z-40 flex justify-end" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      {/* Panel */}
-      <div
-        className="relative flex flex-col h-full w-full max-w-sm"
-        style={{ background: C.bg, borderLeft: `1px solid ${C.line}`, boxShadow: "-6px 0 32px rgba(20,37,27,0.14)" }}
-      >
+    <div className="flex flex-col h-full" style={{ background: C.bg }}>
         {/* Header */}
         <div
-          className="flex items-center gap-3 px-4 py-3.5 shrink-0"
-          style={{ background: C.primary, borderBottom: `1px solid ${C.line}` }}
+          className="flex items-center gap-3 px-4 py-4 shrink-0"
+          style={{ background: C.primary }}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.18)" }}>
-            <Bot size={16} color="#fff" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full shrink-0" style={{ background: "rgba(255,255,255,0.18)" }}>
+            <Bot size={18} color="#fff" />
           </div>
-          <div className="flex-1">
-            <div className="text-[14px] font-bold text-white" style={fDisplay}>ChukaNest AI</div>
-            <div className="text-[11px] text-white/70" style={fBody}>Powered by Groq · llama-3.1</div>
+          <div>
+            <div className="text-[16px] font-bold text-white" style={fDisplay}>ChukaNest AI</div>
+            <div className="text-[11px] text-white/70" style={fBody}>Powered by Groq · llama-3.1-8b-instant</div>
           </div>
-          <button
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors"
-            style={{ background: "rgba(255,255,255,0.15)" }}
-          >
-            <X size={14} color="#fff" />
-          </button>
         </div>
 
         {/* Messages */}
@@ -2362,14 +2350,13 @@ function ChatSidebar({ onClose, role }) {
               style={{ background: input.trim() && !loading ? C.primary : C.line }}
             >
               {loading
-                ? <Loader2 size={14} color="#fff" className="animate-spin" />
+                ? <Spinner size={18} color="#fff" />
                 : <Send size={14} color={input.trim() ? "#fff" : C.inkSoft} />
               }
             </button>
           </div>
           <div className="mt-1.5 text-center text-[10px]" style={{ ...fBody, color: C.inkSoft }}>Enter to send · Shift+Enter for new line</div>
         </div>
-      </div>
     </div>
   );
 }
@@ -2386,7 +2373,6 @@ export default function App() {
   const [reviews, setReviews] = useState({}); // { hostelId: Review[] }
   const [toast, setToast] = useState(null);
   const [hostelLoading, setHostelLoading] = useState(true);
-  const [chatOpen, setChatOpen] = useState(false);
   const [dark, setDark] = useState(() => localStorage.getItem("cn_dark") === "1");
   const toastRef = useRef(null);
 
@@ -2514,27 +2500,6 @@ export default function App() {
       <Toast toast={toast} />
       <AppNav tab={tab} setTab={setTab} role={role} dark={dark} toggleDark={toggleDark} />
 
-      {/* Floating AI chat button */}
-      {!chatOpen && (
-        <button
-          onClick={() => setChatOpen(true)}
-          className="fixed z-40 flex items-center gap-2 rounded-full px-4 py-3 shadow-lg transition-all hover:scale-105"
-          style={{
-            bottom: 82,
-            right: 16,
-            background: C.primary,
-            boxShadow: "0 4px 20px rgba(20,100,60,0.35)",
-          }}
-          title="Ask AI Assistant"
-        >
-          <Bot size={18} color="#fff" />
-          <span className="text-[13px] font-bold text-white hidden sm:inline" style={fDisplay}>Ask AI</span>
-        </button>
-      )}
-
-      {/* AI Chat Sidebar */}
-      {chatOpen && <ChatSidebar onClose={() => setChatOpen(false)} role={role} />}
-
       <div className="flex-1 overflow-hidden md:ml-[220px]">
         {openHostel ? (
           <DetailScreen
@@ -2563,8 +2528,9 @@ export default function App() {
             )}
             {tab === "map" && <MapScreen hostels={hostels} onOpen={(id) => setOpenHostelId(id)} />}
             {tab === "favs" && <FavouritesScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} />}
+            {tab === "ai" && <AiScreen role={role} />}
             {tab === "admin" && role === "admin" && <AdminScreen showToast={showToast} />}
-            {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} onOpenChat={() => setChatOpen(true)} />}
+            {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} onOpenChat={() => setTab("ai")} />}
           </div>
         )}
       </div>
