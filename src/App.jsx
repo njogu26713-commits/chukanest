@@ -399,6 +399,23 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
 
 /* ---------------------------------- AUTH SCREEN ---------------------------------- */
 
+const AUTH_ANIM_CSS = `
+@keyframes cn-auth-up    { from { opacity:0; transform:translateY(32px);  } to { opacity:1; transform:translateY(0);  } }
+@keyframes cn-auth-left  { from { opacity:0; transform:translateX(-28px); } to { opacity:1; transform:translateX(0); } }
+@keyframes cn-auth-right { from { opacity:0; transform:translateX(28px);  } to { opacity:1; transform:translateX(0); } }
+@keyframes cn-field-in   { from { opacity:0; transform:translateX(14px);  } to { opacity:1; transform:translateX(0); } }
+@keyframes cn-float      { 0%,100%{transform:translateY(0);}  50%{transform:translateY(-14px);} }
+@keyframes cn-orb-a      { 0%,100%{transform:scale(1)   translate(0,0);}    50%{transform:scale(1.12) translate(18px,-22px);} }
+@keyframes cn-orb-b      { 0%,100%{transform:scale(1)   translate(0,0);}    50%{transform:scale(0.92) translate(-16px,18px);} }
+@keyframes cn-orb-c      { 0%,100%{transform:scale(1)   translate(0,0);}    50%{transform:scale(1.06) translate(10px,14px);}  }
+@keyframes cn-pulse-ring { 0%{box-shadow:0 0 0 0 rgba(47,143,94,0.4);} 70%{box-shadow:0 0 0 10px rgba(47,143,94,0);} 100%{box-shadow:0 0 0 0 rgba(47,143,94,0);} }
+.cn-auth-input-wrap { transition: border-color 0.2s, box-shadow 0.2s; }
+.cn-auth-input-wrap:focus-within { box-shadow: 0 0 0 3px rgba(47,143,94,0.18); }
+.cn-auth-btn-primary:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); }
+.cn-auth-btn-primary:not(:disabled):active { transform: translateY(0) scale(0.98); }
+.cn-auth-btn-primary { transition: filter 0.15s, transform 0.15s; }
+`;
+
 function AuthScreen({ onAuthed, showToast }) {
   const [mode, setMode] = useState("login");
   const [showPw, setShowPw] = useState(false);
@@ -412,6 +429,14 @@ function AuthScreen({ onAuthed, showToast }) {
   const [error, setError] = useState("");
   const [authConfig, setAuthConfig] = useState({ googleClientId: null, adminCodeEnabled: false });
   const googleBtnRef = useRef(null);
+
+  useEffect(() => {
+    if (document.getElementById("cn-auth-anim-style")) return;
+    const s = document.createElement("style");
+    s.id = "cn-auth-anim-style";
+    s.textContent = AUTH_ANIM_CSS;
+    document.head.appendChild(s);
+  }, []);
 
   // Load auth config and initialise Google Identity Services (OAuth2 popup flow)
   const googleTokenClientRef = useRef(null);
@@ -493,20 +518,26 @@ function AuthScreen({ onAuthed, showToast }) {
     }
   };
 
+  // Re-key fields when mode changes so they re-animate
+  const fieldKey = mode;
+
   const formPanel = (
     <div className="w-full max-w-sm mx-auto flex flex-col justify-center py-10 px-6 md:px-8">
       {/* Mobile-only logo */}
-      <div className="mb-8 flex flex-col items-center md:hidden">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+      <div className="mb-8 flex flex-col items-center md:hidden" style={{ animation: "cn-auth-up 0.6s ease both" }}>
+        <div
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
+          style={{ background: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,0.18)", animation: "cn-float 5s ease-in-out infinite" }}
+        >
           <Building2 size={30} color={C.primary} />
         </div>
         <div className="text-2xl font-extrabold text-white" style={fDisplay}>ChukaNest</div>
         <div className="mt-1 text-[13px] font-medium text-white/85" style={fBody}>Verified student housing, zero scams.</div>
       </div>
 
-      <div className="rounded-3xl p-5 md:p-6" style={{ background: C.surface, boxShadow: "0 10px 40px rgba(20,37,27,0.12)" }}>
+      <div className="rounded-3xl p-5 md:p-6" style={{ background: C.surface, boxShadow: "0 10px 40px rgba(20,37,27,0.12)", animation: "cn-auth-up 0.55s 0.05s ease both" }}>
         {/* Desktop-only heading inside form card */}
-        <div className="hidden md:block mb-6">
+        <div className="hidden md:block mb-6" style={{ animation: "cn-auth-right 0.5s 0.2s ease both" }}>
           <div className="text-[22px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>
             {mode === "login" ? "Welcome back" : "Create account"}
           </div>
@@ -515,7 +546,7 @@ function AuthScreen({ onAuthed, showToast }) {
           </div>
         </div>
 
-        <div className="mb-5 flex rounded-2xl p-1" style={{ background: C.mint }}>
+        <div className="mb-5 flex rounded-2xl p-1" style={{ background: C.mint, animation: "cn-auth-up 0.5s 0.25s ease both" }}>
           {["login", "signup"].map((m) => (
             <button
               key={m}
@@ -533,7 +564,7 @@ function AuthScreen({ onAuthed, showToast }) {
           onClick={handleGoogleClick}
           disabled={googleLoading}
           className="w-full flex items-center justify-center gap-2.5 rounded-2xl py-2.5 text-sm font-semibold border transition-all mb-4"
-          style={{ background: C.surface, border: `1px solid ${C.line}`, color: C.ink, ...fBody, opacity: googleLoading ? 0.7 : 1 }}
+          style={{ background: C.surface, border: `1px solid ${C.line}`, color: C.ink, ...fBody, opacity: googleLoading ? 0.7 : 1, animation: "cn-auth-up 0.5s 0.32s ease both" }}
         >
           {googleLoading ? (
             <Spinner size={18} color={C.primary} />
@@ -548,32 +579,32 @@ function AuthScreen({ onAuthed, showToast }) {
           Continue with Google
         </button>
 
-        <div className="mb-4 flex items-center gap-3">
+        <div className="mb-4 flex items-center gap-3" style={{ animation: "cn-auth-up 0.5s 0.38s ease both" }}>
           <div className="h-px flex-1" style={{ background: C.line }} />
           <span className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>or</span>
           <div className="h-px flex-1" style={{ background: C.line }} />
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3" key={fieldKey}>
           {mode === "signup" && (
-            <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+            <div className="cn-auth-input-wrap flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}`, animation: "cn-field-in 0.35s ease both" }}>
               <User size={16} color={C.inkSoft} />
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className="w-full bg-transparent text-sm outline-none" style={fBody} />
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className="w-full bg-transparent text-sm outline-none" style={{ ...fBody, color: C.ink }} />
             </div>
           )}
-          <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+          <div className="cn-auth-input-wrap flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}`, animation: "cn-field-in 0.35s 0.06s ease both" }}>
             <Mail size={16} color={C.inkSoft} />
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@students.chuka.ac.ke" className="w-full bg-transparent text-sm outline-none" style={fBody} />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@students.chuka.ac.ke" className="w-full bg-transparent text-sm outline-none" style={{ ...fBody, color: C.ink }} />
           </div>
-          <div className="flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+          <div className="cn-auth-input-wrap flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.bg, border: `1px solid ${C.line}`, animation: "cn-field-in 0.35s 0.12s ease both" }}>
             <Lock size={16} color={C.inkSoft} />
-            <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full bg-transparent text-sm outline-none" style={fBody} onKeyDown={(e) => e.key === "Enter" && handleSubmit()} />
+            <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full bg-transparent text-sm outline-none" style={{ ...fBody, color: C.ink }} onKeyDown={(e) => e.key === "Enter" && handleSubmit()} />
             <button onClick={() => setShowPw((s) => !s)}>{showPw ? <EyeOff size={16} color={C.inkSoft} /> : <Eye size={16} color={C.inkSoft} />}</button>
           </div>
 
           {/* Admin invite code — shown on signup when toggled */}
           {mode === "signup" && (
-            <div>
+            <div style={{ animation: "cn-field-in 0.35s 0.18s ease both" }}>
               <button
                 type="button"
                 onClick={() => { setShowAdminCode((s) => !s); setAdminCode(""); }}
@@ -583,7 +614,7 @@ function AuthScreen({ onAuthed, showToast }) {
                 {showAdminCode ? "▲ Hide admin code" : "▾ Register as admin?"}
               </button>
               {showAdminCode && (
-                <div className="mt-2 flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.goldSoft, border: `1px solid ${C.gold}` }}>
+                <div className="cn-auth-input-wrap mt-2 flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.goldSoft, border: `1px solid ${C.gold}`, animation: "cn-field-in 0.3s ease both" }}>
                   <ShieldCheck size={16} color={C.gold} />
                   <input
                     value={adminCode}
@@ -599,23 +630,28 @@ function AuthScreen({ onAuthed, showToast }) {
         </div>
 
         {error && (
-          <div className="mt-3 rounded-xl px-3 py-2 text-[12px] font-medium" style={{ background: C.dangerSoft, color: C.danger, ...fBody }}>
+          <div className="mt-3 rounded-xl px-3 py-2 text-[12px] font-medium" style={{ background: C.dangerSoft, color: C.danger, ...fBody, animation: "cn-auth-up 0.3s ease both" }}>
             {error}
           </div>
         )}
 
-        <div className="mt-5">
-          <PrimaryButton full onClick={handleSubmit} disabled={loading}>
+        <div className="mt-5" style={{ animation: "cn-auth-up 0.5s 0.42s ease both" }}>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="cn-auth-btn-primary w-full rounded-2xl py-3 text-sm font-bold text-white"
+            style={{ ...fBody, background: loading ? C.primaryLight : C.primary, opacity: loading ? 0.8 : 1 }}
+          >
             {loading ? "Please wait…" : mode === "login" ? "Log In" : "Create Account"}
-          </PrimaryButton>
+          </button>
         </div>
 
-        <button onClick={() => { showToast("Continuing as guest"); onAuthed("guest", null); }} className="mt-4 w-full text-center text-[13px] font-semibold" style={{ ...fBody, color: C.primaryDark }}>
+        <button onClick={() => { showToast("Continuing as guest"); onAuthed("guest", null); }} className="mt-4 w-full text-center text-[13px] font-semibold" style={{ ...fBody, color: C.primaryDark, animation: "cn-auth-up 0.5s 0.48s ease both" }}>
           Continue as guest →
         </button>
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-1.5 text-[12px]" style={{ ...fBody, color: C.inkSoft }}>
+      <div className="mt-5 flex items-center justify-center gap-1.5 text-[12px]" style={{ ...fBody, color: C.inkSoft, animation: "cn-auth-up 0.5s 0.55s ease both" }}>
         <ShieldCheck size={12} />
         <span>Your data is safe with us · ChukaNest 2024</span>
       </div>
@@ -636,34 +672,41 @@ function AuthScreen({ onAuthed, showToast }) {
       <div className="hidden md:flex h-full w-full">
         {/* Left — branding hero */}
         <div
-          className="flex flex-col justify-between p-12 w-[55%] shrink-0"
+          className="relative flex flex-col justify-between p-12 w-[55%] shrink-0 overflow-hidden"
           style={{ background: `linear-gradient(160deg, ${C.primaryDark} 0%, ${C.primaryLight} 100%)` }}
         >
+          {/* Animated background orbs */}
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: "-10%", left: "-8%",  width: 340, height: 340, borderRadius: "50%", background: "rgba(255,255,255,0.06)", animation: "cn-orb-a 12s ease-in-out infinite" }} />
+            <div style={{ position: "absolute", bottom: "5%",  right: "-10%", width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,0.05)", animation: "cn-orb-b 15s ease-in-out infinite" }} />
+            <div style={{ position: "absolute", top: "38%",  right: "12%",  width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.04)", animation: "cn-orb-c 9s  ease-in-out infinite" }} />
+          </div>
+
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.15)" }}>
+          <div className="relative flex items-center gap-3" style={{ animation: "cn-auth-left 0.6s 0.1s ease both" }}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.15)", animation: "cn-float 6s ease-in-out infinite" }}>
               <Building2 size={22} color="#fff" />
             </div>
             <span className="text-[20px] font-extrabold text-white" style={fDisplay}>ChukaNest</span>
           </div>
 
           {/* Hero text */}
-          <div>
-            <div className="text-[40px] font-extrabold text-white leading-tight mb-4" style={fDisplay}>
+          <div className="relative">
+            <div className="text-[40px] font-extrabold text-white leading-tight mb-4" style={{ ...fDisplay, animation: "cn-auth-left 0.7s 0.2s ease both" }}>
               Find your home<br />near campus.
             </div>
-            <div className="text-[15px] text-white/80 mb-10 leading-relaxed" style={fBody}>
+            <div className="text-[15px] text-white/80 mb-10 leading-relaxed" style={{ ...fBody, animation: "cn-auth-left 0.7s 0.32s ease both" }}>
               Verified hostels, transparent pricing, and zero scams — built for Chuka University students.
             </div>
 
-            {/* Feature bullets */}
+            {/* Feature bullets — staggered */}
             <div className="space-y-3">
               {[
                 { icon: ShieldCheck, text: "Every listing is verified by our team" },
-                { icon: Star, text: "Real reviews from fellow students" },
-                { icon: MapPin, text: "Distance from campus on every listing" },
-              ].map(({ icon: Icon, text }) => (
-                <div key={text} className="flex items-center gap-3">
+                { icon: Star,        text: "Real reviews from fellow students" },
+                { icon: MapPin,      text: "Distance from campus on every listing" },
+              ].map(({ icon: Icon, text }, i) => (
+                <div key={text} className="flex items-center gap-3" style={{ animation: `cn-auth-left 0.6s ${0.42 + i * 0.1}s ease both` }}>
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl shrink-0" style={{ background: "rgba(255,255,255,0.15)" }}>
                     <Icon size={15} color="#fff" />
                   </div>
@@ -673,10 +716,10 @@ function AuthScreen({ onAuthed, showToast }) {
             </div>
           </div>
 
-          {/* Stat bar */}
-          <div className="flex gap-8">
-            {[["7+", "Verified hostels"], ["200+", "Student reviews"], ["0", "Scam reports"]].map(([val, label]) => (
-              <div key={label}>
+          {/* Stat bar — staggered */}
+          <div className="relative flex gap-8">
+            {[["7+", "Verified hostels"], ["200+", "Student reviews"], ["0", "Scam reports"]].map(([val, label], i) => (
+              <div key={label} style={{ animation: `cn-auth-up 0.6s ${0.55 + i * 0.1}s ease both` }}>
                 <div className="text-[26px] font-extrabold text-white" style={fMono}>{val}</div>
                 <div className="text-[12px] text-white/70" style={fBody}>{label}</div>
               </div>
