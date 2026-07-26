@@ -3,8 +3,7 @@ import mongoose from "mongoose";
 const hostelSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    gender: { type: String, enum: ["Female", "Male", "Mixed"], required: true },
-    roomType: { type: String, enum: ["Bedsitter", "Single", "Shared"], required: true },
+    roomType: { type: String, enum: ["Bedsitter", "Single", "Shared", "Studio", "1 Bedroom", "2 Bedroom"], required: true },
     price: { type: Number, required: true },
     distance: { type: Number, required: true },
     rating: { type: Number, default: 0 },

@@ -52,8 +52,7 @@ router.post("/search", async (req, res) => {
           role: "system",
           content: `You are a search assistant for ChukaNest, a hostel-finder app for Chuka University students in Kenya.
 Extract structured filters from the user's natural-language search query and return ONLY a JSON object with these fields:
-- "gender": "Female" | "Male" | "Mixed" | null
-- "roomType": "Bedsitter" | "Single" | "Shared" | null
+- "roomType": "Bedsitter" | "Single" | "Shared" | "Studio" | "1 Bedroom" | "2 Bedroom" | null
 - "maxPrice": number (KES per month) | null
 - "minRating": number (1-5) | null
 - "amenities": array of strings from ["wifi","water","power","security","parking","laundry","study","cctv"] | []
@@ -61,9 +60,9 @@ Extract structured filters from the user's natural-language search query and ret
 - "summary": short human-readable sentence explaining what you understood (max 15 words)
 
 Examples:
-- "quiet female bedsitter near gate" → {"gender":"Female","roomType":"Bedsitter","maxPrice":null,"minRating":null,"amenities":[],"sortBy":"distance","summary":"Female bedsitters, sorted by distance to campus"}
-- "cheap wifi under 5000" → {"gender":null,"roomType":null,"maxPrice":5000,"minRating":null,"amenities":["wifi"],"sortBy":"price_asc","summary":"Hostels with Wi-Fi under KES 5,000"}
-- "top rated with security and cctv" → {"gender":null,"roomType":null,"maxPrice":null,"minRating":4,"amenities":["security","cctv"],"sortBy":"rating","summary":"Highest-rated hostels with security and CCTV"}`,
+- "bedsitter near gate" → {"roomType":"Bedsitter","maxPrice":null,"minRating":null,"amenities":[],"sortBy":"distance","summary":"Bedsitters, sorted by distance to campus"}
+- "cheap wifi under 5000" → {"roomType":null,"maxPrice":5000,"minRating":null,"amenities":["wifi"],"sortBy":"price_asc","summary":"Hostels with Wi-Fi under KES 5,000"}
+- "top rated with security and cctv" → {"roomType":null,"maxPrice":null,"minRating":4,"amenities":["security","cctv"],"sortBy":"rating","summary":"Highest-rated hostels with security and CCTV"}`,
         },
         { role: "user", content: query },
       ],
@@ -114,16 +113,16 @@ router.post("/summarize/:hostelId", async (req, res) => {
 
 /* ─────────────────────────────────────────────────────────────
    POST /api/ai/recommend
-   Body: { bookmarkedIds: [...], budget: number | null, gender: string | null }
+   Body: { bookmarkedIds: [...], budget: number | null }
    Returns up to 3 recommended hostels with a reason each
 ───────────────────────────────────────────────────────────── */
 router.post("/recommend", async (req, res) => {
   try {
-    const { bookmarkedIds = [], budget = null, gender = null } = req.body;
+    const { bookmarkedIds = [], budget = null } = req.body;
 
     // Fetch all active hostels
     const allHostels = await Hostel.find({ status: "active" }).select(
-      "name gender roomType price distance rating reviewCount verified amenities description"
+      "name roomType price distance rating reviewCount verified amenities description"
     );
 
     if (allHostels.length === 0) return res.json({ recommendations: [] });
@@ -132,13 +131,12 @@ router.post("/recommend", async (req, res) => {
     const hostelList = allHostels
       .map((h) => {
         const isFav = bookmarkedIds.includes(h._id.toString());
-        return `ID:${h._id} | ${h.name} | ${h.gender} | ${h.roomType} | KES ${h.price}/mo | ${h.distance}km | Rating:${h.rating} | ${h.verified ? "Verified" : "Unverified"} | Amenities:${h.amenities.join(",")}${isFav ? " | [BOOKMARKED]" : ""}`;
+        return `ID:${h._id} | ${h.name} | ${h.roomType} | KES ${h.price}/mo | ${h.distance}km | Rating:${h.rating} | ${h.verified ? "Verified" : "Unverified"} | Amenities:${h.amenities.join(",")}${isFav ? " | [BOOKMARKED]" : ""}`;
       })
       .join("\n");
 
     const userContext = [
       budget ? `Budget: up to KES ${budget}/month` : null,
-      gender ? `Gender preference: ${gender}` : null,
       bookmarkedIds.length > 0 ? `User has bookmarked ${bookmarkedIds.length} hostel(s)` : "User has no bookmarks yet",
     ]
       .filter(Boolean)
@@ -151,7 +149,7 @@ router.post("/recommend", async (req, res) => {
           role: "system",
           content: `You are a hostel recommendation assistant for ChukaNest. Given a list of hostels and a student's preferences, pick the 3 best matches they have NOT already bookmarked. Return ONLY a JSON object:
 {"recommendations": [{"id": "<hostel _id>", "reason": "<one specific sentence why this hostel suits this student, max 15 words>"}]}
-Pick hostels that match the student's budget, gender preference, and are highly rated. Avoid already-bookmarked hostels.`,
+Pick hostels that match the student's budget and are highly rated. Avoid already-bookmarked hostels.`,
         },
         {
           role: "user",
@@ -184,13 +182,13 @@ router.post("/chat", async (req, res) => {
     const { messages = [] } = req.body;
 
     const hostels = await Hostel.find({ status: "active" })
-      .select("name gender roomType price distance rating amenities verified")
+      .select("name roomType price distance rating amenities verified")
       .lean();
 
     const hostelList = hostels
       .map(
         (h) =>
-          `• ${h.name} — ${h.gender}, ${h.roomType}, KES ${h.price?.toLocaleString()}/mo, ${h.distance}km from campus, ⭐${h.rating}, amenities: ${h.amenities?.join(", ")}`
+          `• ${h.name} — ${h.roomType}, KES ${h.price?.toLocaleString()}/mo, ${h.distance}km from campus, ⭐${h.rating}, amenities: ${h.amenities?.join(", ")}`
       )
       .join("\n");
 
@@ -200,7 +198,7 @@ Currently available hostels:
 ${hostelList}
 
 Your job:
-- Help students find the right hostel based on their budget, gender, room type, or amenity preferences.
+- Help students find the right hostel based on their budget, room type, or amenity preferences.
 - When a student describes what they want, suggest specific hostels by name from the list above.
 - Answer questions about hostel life, pricing, distance to campus, and amenities.
 - Keep responses concise (under 100 words unless detail is clearly needed).

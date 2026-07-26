@@ -384,7 +384,7 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
           </div>
         </div>
         <div className="mt-1 flex items-center gap-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>
-          <MapPin size={12} /> {hostel.distance} km from Chuka University · {hostel.gender}
+          <MapPin size={12} /> {hostel.distance} km from Chuka University
         </div>
         <div className="mt-2.5 flex items-center justify-between">
           <div style={{ ...fMono, color: C.primaryDark }} className="text-[16px] font-bold">
@@ -697,7 +697,6 @@ function AuthScreen({ onAuthed, showToast }) {
 
 function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser, favIds }) {
   const [search, setSearch] = useState("");
-  const [genderFilter, setGenderFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
   const [sortBy, setSortBy] = useState("rating");
 
@@ -717,7 +716,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
     if (!currentUser || recsLoaded) return;
     setRecsLoading(true);
     setRecsLoaded(true);
-    api.aiRecommend({ bookmarkedIds: favIds ? [...favIds] : [], gender: null, budget: null })
+    api.aiRecommend({ bookmarkedIds: favIds ? [...favIds] : [], budget: null })
       .then((data) => setRecs(data.recommendations || []))
       .catch(() => {})
       .finally(() => setRecsLoading(false));
@@ -734,8 +733,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
       setAiHint(result.summary || "");
       // Apply AI-suggested sort
       if (result.sortBy) setSortBy(result.sortBy);
-      // Apply AI-suggested gender/type filters
-      if (result.gender) setGenderFilter(result.gender);
+      // Apply AI-suggested type filter
       if (result.roomType) setTypeFilter(result.roomType);
     } catch {
       showToast("AI search failed — try again");
@@ -748,7 +746,6 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
     setAiFilters(null);
     setAiHint("");
     setSearch("");
-    setGenderFilter("All");
     setTypeFilter("All");
     setSortBy("rating");
   };
@@ -759,14 +756,13 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
         // Regular text search (when not in AI mode or AI hasn't run yet)
         const q = aiFilters ? "" : search.toLowerCase();
         const matchSearch = !q || h.name.toLowerCase().includes(q) || h.roomType.toLowerCase().includes(q);
-        const matchGender = genderFilter === "All" || h.gender === genderFilter;
         const matchType = typeFilter === "All" || h.roomType === typeFilter;
         // AI filters (applied on top)
         const matchMaxPrice = !aiFilters?.maxPrice || h.price <= aiFilters.maxPrice;
         const matchMinRating = !aiFilters?.minRating || h.rating >= aiFilters.minRating;
         const matchAmenities = !aiFilters?.amenities?.length ||
           aiFilters.amenities.every((a) => h.amenities.includes(a));
-        return matchSearch && matchGender && matchType && matchMaxPrice && matchMinRating && matchAmenities;
+        return matchSearch && matchType && matchMaxPrice && matchMinRating && matchAmenities;
       })
       .sort((a, b) => {
         if (sortBy === "rating") return b.rating - a.rating;
@@ -775,7 +771,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
         if (sortBy === "distance") return a.distance - b.distance;
         return 0;
       });
-  }, [hostels, search, genderFilter, typeFilter, sortBy, aiFilters]);
+  }, [hostels, search, typeFilter, sortBy, aiFilters]);
 
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
@@ -839,11 +835,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
 
         {/* Filter chips */}
         <div className="mt-2.5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {["All", "Female", "Male", "Mixed"].map((g) => (
-            <Chip key={g} active={genderFilter === g} onClick={() => setGenderFilter(g)}>{g}</Chip>
-          ))}
-          <div className="h-6 w-px self-center" style={{ background: C.line }} />
-          {["All", "Bedsitter", "Single", "Shared"].map((t) => (
+          {["All", "Bedsitter", "Single", "Shared", "Studio", "1 Bedroom", "2 Bedroom"].map((t) => (
             <Chip key={t} active={typeFilter === t} onClick={() => setTypeFilter(t)}>{t}</Chip>
           ))}
         </div>
@@ -1071,7 +1063,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
                 <div className="flex items-center gap-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>
                   <MapPin size={12} /> {hostel.distance} km from campus
                 </div>
-                <Badge>{hostel.gender}</Badge>
+
                 <Badge>{hostel.roomType}</Badge>
               </div>
             </div>
@@ -1333,7 +1325,7 @@ function MapScreen({ hostels, onOpen }) {
             <img src={selectedHostel.images[0]} alt="" className="h-16 w-16 rounded-2xl object-cover shrink-0" style={{ aspectRatio: "1/1" }} />
             <div className="flex-1 min-w-0">
               <div className="text-[15px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{selectedHostel.name}</div>
-              <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{selectedHostel.distance} km · {selectedHostel.gender} · {selectedHostel.roomType}</div>
+              <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{selectedHostel.distance} km · {selectedHostel.roomType}</div>
               <div className="text-[14px] font-bold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {selectedHostel.price.toLocaleString()}/mo</div>
             </div>
             <div className="flex flex-col gap-1.5 shrink-0">
@@ -1567,7 +1559,7 @@ const AMENITY_OPTIONS = [
 function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   const isEdit = !!hostel;
   const empty = {
-    name: "", landlord: "", phone: "", gender: "Female", roomType: "Bedsitter",
+    name: "", landlord: "", phone: "", roomType: "Bedsitter",
     price: "", distance: "", availableRooms: "", description: "",
     amenities: [], status: "active",
   };
@@ -1576,7 +1568,6 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
     name: h.name ?? "",
     landlord: h.landlord ?? "",
     phone: h.phone ?? "",
-    gender: h.gender ?? "Female",
     roomType: h.roomType ?? "Bedsitter",
     price: h.price ?? "",
     distance: h.distance ?? "",
@@ -1689,20 +1680,12 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
             </div>
           </div>
 
-          {/* Gender + Room type */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="mb-1.5" style={labelStyle}>Gender</div>
-              <select style={selectStyle} value={form.gender} onChange={(e) => set("gender", e.target.value)}>
-                {["Female", "Male", "Mixed"].map((g) => <option key={g}>{g}</option>)}
-              </select>
-            </div>
-            <div>
-              <div className="mb-1.5" style={labelStyle}>Room type</div>
-              <select style={selectStyle} value={form.roomType} onChange={(e) => set("roomType", e.target.value)}>
-                {["Bedsitter", "Single", "Shared"].map((r) => <option key={r}>{r}</option>)}
-              </select>
-            </div>
+          {/* Room type */}
+          <div>
+            <div className="mb-1.5" style={labelStyle}>House category</div>
+            <select style={selectStyle} value={form.roomType} onChange={(e) => set("roomType", e.target.value)}>
+              {["Bedsitter", "Single", "Shared", "Studio", "1 Bedroom", "2 Bedroom"].map((r) => <option key={r}>{r}</option>)}
+            </select>
           </div>
 
           {/* Price + Distance + Rooms */}
@@ -1987,12 +1970,15 @@ function AdminScreen({ showToast }) {
             {/* Listing breakdown */}
             <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${C.line}` }}>
               <div className="px-4 py-3" style={{ background: C.surface, borderBottom: `1px solid ${C.line}` }}>
-                <div className="text-[13px] font-bold" style={{ ...fDisplay, color: C.ink }}>Listings by Gender</div>
+                <div className="text-[13px] font-bold" style={{ ...fDisplay, color: C.ink }}>Listings by Category</div>
               </div>
               {[
-                { label: "Female only", count: listings.filter(h => h.gender === "Female").length, color: "#E879A0" },
-                { label: "Male only",   count: listings.filter(h => h.gender === "Male").length,   color: "#5B6DCD" },
-                { label: "Mixed",       count: listings.filter(h => h.gender === "Mixed").length,   color: C.primary },
+                { label: "Bedsitter",  count: listings.filter(h => h.roomType === "Bedsitter").length,  color: "#E879A0" },
+                { label: "Single",     count: listings.filter(h => h.roomType === "Single").length,     color: "#5B6DCD" },
+                { label: "Shared",     count: listings.filter(h => h.roomType === "Shared").length,     color: C.primary },
+                { label: "Studio",     count: listings.filter(h => h.roomType === "Studio").length,     color: "#F59E0B" },
+                { label: "1 Bedroom",  count: listings.filter(h => h.roomType === "1 Bedroom").length,  color: "#10B981" },
+                { label: "2 Bedroom",  count: listings.filter(h => h.roomType === "2 Bedroom").length,  color: "#6366F1" },
               ].map(({ label, count, color }) => (
                 <div key={label} className="flex items-center gap-3 px-4 py-3" style={{ background: C.surface, borderBottom: `1px solid ${C.line}` }}>
                   <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
@@ -2028,7 +2014,7 @@ function AdminScreen({ showToast }) {
                         : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.goldSoft, color: C.gold }}>Unverified</span>
                       }
                     </div>
-                    <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{h.landlord} · {h.gender} · {h.roomType}</div>
+                    <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{h.landlord} · {h.roomType}</div>
                     <div className="text-[12px] font-semibold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo · {h.availableRooms} rooms</div>
                   </div>
                 </div>
@@ -2353,7 +2339,7 @@ function AppNav({ tab, setTab, role, dark, toggleDark }) {
 /* ────────────────────────── AI CHAT PAGE ────────────────────────── */
 
 function AiScreen({ role }) {
-  const GREETING = "Hi! 👋 I'm your ChukaNest assistant. Tell me what you're looking for — budget, room type, gender preference — and I'll point you to the right hostel.";
+  const GREETING = "Hi! 👋 I'm your ChukaNest assistant. Tell me what you're looking for — budget, room type, amenities — and I'll point you to the right hostel.";
   const [messages, setMessages] = useState([{ role: "assistant", content: GREETING }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -2422,10 +2408,10 @@ function AiScreen({ role }) {
   };
 
   const quickPrompts = [
-    "Female bedsitter under KES 5,000",
+    "Bedsitter under KES 5,000",
     "Closest hostel to campus",
     "Best rated with WiFi",
-    "Mixed hostel with parking",
+    "1 bedroom with parking",
   ];
 
   return (
