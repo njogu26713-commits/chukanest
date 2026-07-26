@@ -413,7 +413,9 @@ function AuthScreen({ onAuthed, showToast }) {
   const [authConfig, setAuthConfig] = useState({ googleClientId: null, adminCodeEnabled: false });
   const googleBtnRef = useRef(null);
 
-  // Load auth config and initialise Google Identity Services
+  // Load auth config and initialise Google Identity Services (OAuth2 popup flow)
+  const googleTokenClientRef = useRef(null);
+
   useEffect(() => {
     api.getAuthConfig().then((cfg) => {
       setAuthConfig(cfg);
@@ -423,9 +425,10 @@ function AuthScreen({ onAuthed, showToast }) {
         script.async = true;
         script.defer = true;
         script.onload = () => {
-          window.google.accounts.id.initialize({
+          googleTokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
             client_id: cfg.googleClientId,
-            callback: handleGoogleCredential,
+            scope: "openid email profile",
+            callback: handleGoogleAccessToken,
           });
         };
         document.head.appendChild(script);
@@ -433,11 +436,15 @@ function AuthScreen({ onAuthed, showToast }) {
     }).catch(() => {});
   }, []);
 
-  const handleGoogleCredential = async ({ credential }) => {
-    setGoogleLoading(true);
+  const handleGoogleAccessToken = async ({ access_token, error }) => {
+    if (error || !access_token) {
+      setGoogleLoading(false);
+      if (error !== "access_denied") setError("Google sign-in failed. Please try again.");
+      return;
+    }
     setError("");
     try {
-      const result = await api.googleLogin(credential, adminCode || undefined);
+      const result = await api.googleLogin(access_token, adminCode || undefined);
       saveAuth(result.token, result.user);
       showToast(result.user.role === "admin" ? "Welcome, Admin 👋" : "Welcome to ChukaNest!");
       onAuthed(result.user.role, result.user);
@@ -453,7 +460,12 @@ function AuthScreen({ onAuthed, showToast }) {
       setError("Google sign-in is not configured yet. Use email and password for now.");
       return;
     }
-    window.google.accounts.id.prompt();
+    if (!googleTokenClientRef.current) {
+      setError("Google sign-in is still loading. Please try again.");
+      return;
+    }
+    setGoogleLoading(true);
+    googleTokenClientRef.current.requestAccessToken({ prompt: "select_account" });
   };
 
   const handleSubmit = async () => {

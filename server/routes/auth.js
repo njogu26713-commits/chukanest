@@ -77,7 +77,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// POST /api/auth/google — verify Google ID token, create or sign in user
+// POST /api/auth/google — verify Google access token and sign in / create user
 router.post("/google", async (req, res) => {
   try {
     const { credential, adminCode } = req.body;
@@ -86,9 +86,12 @@ router.post("/google", async (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     if (!clientId) return res.status(503).json({ error: "Google sign-in is not configured yet" });
 
-    const client = new OAuth2Client(clientId);
-    const ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
-    const payload = ticket.getPayload();
+    // Fetch user info from Google using the access token
+    const googleRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${credential}` },
+    });
+    if (!googleRes.ok) return res.status(401).json({ error: "Invalid Google token" });
+    const payload = await googleRes.json();
 
     const { sub: googleId, email, name, picture } = payload;
     if (!email) return res.status(400).json({ error: "Google account has no email" });
