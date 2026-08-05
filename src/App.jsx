@@ -51,36 +51,27 @@ const isVideo = (src = "") =>
   /\.(mp4|webm|ogg|mov|m4v|mkv)(\?.*)?$/i.test(src) ||
   src.startsWith("blob:") && src.includes("video");
 
+const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23E4E9E3'/%3E%3Crect x='160' y='110' width='80' height='60' rx='6' fill='%23C4CEBC'/%3E%3Ccircle cx='175' cy='125' r='8' fill='%23A8B8A0'/%3E%3Cpolygon points='155,170 200,130 230,155 260,135 295,170' fill='%23A8B8A0'/%3E%3C/svg%3E";
+
 function MediaItem({ src, alt = "", style, className, controls = false }) {
   if (isVideo(src)) {
-    // Seek to first frame so the video isn't black even if autoplay is blocked
     const onLoaded = (e) => { try { e.target.currentTime = 0.001; } catch {} };
     const videoStyle = { ...style, display: "block" };
     return controls ? (
-      <video
-        src={src}
-        style={videoStyle}
-        className={className}
-        controls
-        playsInline
-        preload="auto"
-        onLoadedMetadata={onLoaded}
-      />
+      <video src={src} style={videoStyle} className={className} controls playsInline preload="auto" onLoadedMetadata={onLoaded} />
     ) : (
-      <video
-        src={src}
-        style={videoStyle}
-        className={className}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        onLoadedMetadata={onLoaded}
-      />
+      <video src={src} style={videoStyle} className={className} autoPlay muted loop playsInline preload="auto" onLoadedMetadata={onLoaded} />
     );
   }
-  return <img src={src} alt={alt} style={style} className={className} />;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      style={style}
+      className={className}
+      onError={(e) => { if (e.target.src !== PLACEHOLDER) e.target.src = PLACEHOLDER; }}
+    />
+  );
 }
 const fBody = { fontFamily: "'Inter', sans-serif" };
 const fMono = { fontFamily: "'Roboto Mono', monospace" };
