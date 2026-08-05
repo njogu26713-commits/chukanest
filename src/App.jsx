@@ -1626,7 +1626,15 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [urlInput, setUrlInput] = useState("");
   const fileInputRef = useRef(null);
+
+  const addUrlInput = () => {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    setImageUrls((prev) => [...prev, trimmed]);
+    setUrlInput("");
+  };
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -1808,25 +1816,49 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
                 ))}
               </div>
             )}
-            {/* Upload button */}
+            {/* Upload controls */}
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               multiple
               style={{ display: "none" }}
               onChange={handleFileChange}
             />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all"
-              style={{ ...fBody, background: C.mint, color: C.primaryDark, opacity: uploading ? 0.6 : 1, border: `1.5px dashed ${C.primary}` }}
-            >
-              <ImagePlus size={16} />
-              {uploading ? "Uploading…" : imageUrls.length > 0 ? "Add more photos" : "Choose photos"}
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* File picker */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all shrink-0"
+                style={{ ...fBody, background: C.mint, color: C.primaryDark, opacity: uploading ? 0.6 : 1, border: `1.5px dashed ${C.primary}` }}
+              >
+                <ImagePlus size={16} />
+                {uploading ? "Uploading…" : imageUrls.length > 0 ? "Add more" : "Choose files"}
+              </button>
+              {/* URL input */}
+              <div className="flex flex-1 min-w-0 items-center rounded-xl overflow-hidden" style={{ border: `1.5px solid ${C.line}`, background: C.bg }}>
+                <input
+                  type="url"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addUrlInput(); } }}
+                  placeholder="Paste image or video URL…"
+                  className="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-[12px] outline-none"
+                  style={{ ...fBody, color: C.ink }}
+                />
+                <button
+                  type="button"
+                  onClick={addUrlInput}
+                  disabled={!urlInput.trim()}
+                  className="px-3 py-2.5 text-[12px] font-semibold shrink-0"
+                  style={{ ...fBody, color: urlInput.trim() ? C.primaryDark : C.inkSoft, background: urlInput.trim() ? C.mint : "transparent", transition: "all 0.15s" }}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
           </div>
 
           {error && (
