@@ -46,6 +46,27 @@ let C = { ...LIGHT_PALETTE };
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;600&display=swap');`;
 
 const fDisplay = { fontFamily: "'Plus Jakarta Sans', sans-serif" };
+
+const isVideo = (src = "") =>
+  /\.(mp4|webm|ogg|mov|m4v|mkv)(\?.*)?$/i.test(src) ||
+  src.startsWith("blob:") && src.includes("video");
+
+function MediaItem({ src, alt = "", style, className }) {
+  if (isVideo(src)) {
+    return (
+      <video
+        src={src}
+        style={style}
+        className={className}
+        autoPlay={false}
+        controls
+        playsInline
+        preload="metadata"
+      />
+    );
+  }
+  return <img src={src} alt={alt} style={style} className={className} />;
+}
 const fBody = { fontFamily: "'Inter', sans-serif" };
 const fMono = { fontFamily: "'Roboto Mono', monospace" };
 
@@ -325,7 +346,7 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
           }}
         >
           {hostel.images.map((src, i) => (
-            <img
+            <MediaItem
               key={i}
               src={src}
               alt={hostel.name}
@@ -1034,7 +1055,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
           }}
         >
           {hostel.images.map((src, i) => (
-            <img
+            <MediaItem
               key={i}
               src={src}
               alt=""
@@ -1803,7 +1824,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
               <div className="flex flex-wrap gap-2 mb-3">
                 {imageUrls.map((url, idx) => (
                   <div key={idx} className="relative rounded-xl overflow-hidden shrink-0" style={{ width: 72, height: 72 }}>
-                    <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <MediaItem src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     <button
                       type="button"
                       onClick={() => removeImage(idx)}
