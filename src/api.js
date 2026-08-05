@@ -69,6 +69,7 @@ export const api = {
   // Users
   getUsers: () => req("GET", "/users").then(normArr),
   updateUser: (id, data) => req("PATCH", `/users/${id}`, data).then(norm),
+  deleteUser: (id) => req("DELETE", `/users/${id}`),
   getBookmarks: () => req("GET", "/users/me/bookmarks").then(normArr),
   toggleBookmark: (hostelId) => req("POST", `/users/me/bookmarks/${hostelId}`),
 };

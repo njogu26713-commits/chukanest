@@ -35,6 +35,19 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// DELETE /api/users/:id — admin only
+router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: "Not found" });
+    if (user.role === "admin") return res.status(403).json({ error: "Cannot delete an admin account" });
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/users/me/bookmarks
 router.get("/me/bookmarks", requireAuth, async (req, res) => {
   try {

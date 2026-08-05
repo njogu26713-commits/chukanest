@@ -2119,20 +2119,36 @@ function AdminScreen({ showToast }) {
                   <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Joined {u.joined} · {u.bookmarks} saved</div>
                 </div>
                 {u.role !== "admin" && (
-                  <button
-                    onClick={async () => {
-                      const newStatus = u.status === "suspended" ? "active" : "suspended";
-                      try {
-                        await api.updateUser(u.id, { status: newStatus });
-                        setUsers((us) => us.map((x) => x.id === u.id ? { ...x, status: newStatus } : x));
-                        showToast(`${u.name || u.email} ${newStatus === "suspended" ? "suspended" : "reactivated"}`);
-                      } catch { showToast("Action failed"); }
-                    }}
-                    className="shrink-0 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold"
-                    style={{ ...fBody, background: C.dangerSoft, color: C.danger }}
-                  >
-                    {u.status === "suspended" ? "Reactivate" : "Suspend"}
-                  </button>
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <button
+                      onClick={async () => {
+                        const newStatus = u.status === "suspended" ? "active" : "suspended";
+                        try {
+                          await api.updateUser(u.id, { status: newStatus });
+                          setUsers((us) => us.map((x) => x.id === u.id ? { ...x, status: newStatus } : x));
+                          showToast(`${u.name || u.email} ${newStatus === "suspended" ? "suspended" : "reactivated"}`);
+                        } catch { showToast("Action failed"); }
+                      }}
+                      className="rounded-xl px-2.5 py-1.5 text-[11px] font-semibold"
+                      style={{ ...fBody, background: C.dangerSoft, color: C.danger }}
+                    >
+                      {u.status === "suspended" ? "Reactivate" : "Suspend"}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm(`Delete ${u.name || u.email}? This cannot be undone.`)) return;
+                        try {
+                          await api.deleteUser(u.id);
+                          setUsers((us) => us.filter((x) => x.id !== u.id));
+                          showToast(`${u.name || u.email} deleted`);
+                        } catch { showToast("Delete failed"); }
+                      }}
+                      className="rounded-xl px-2.5 py-1.5 text-[11px] font-semibold"
+                      style={{ ...fBody, background: "#F5F5F5", color: C.inkSoft }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
