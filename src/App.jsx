@@ -53,27 +53,30 @@ const isVideo = (src = "") =>
 
 function MediaItem({ src, alt = "", style, className, controls = false }) {
   if (isVideo(src)) {
+    // Seek to first frame so the video isn't black even if autoplay is blocked
+    const onLoaded = (e) => { try { e.target.currentTime = 0.001; } catch {} };
+    const videoStyle = { ...style, display: "block" };
     return controls ? (
-      // Form preview / detail: show native controls
       <video
         src={src}
-        style={style}
+        style={videoStyle}
         className={className}
         controls
         playsInline
-        preload="metadata"
+        preload="auto"
+        onLoadedMetadata={onLoaded}
       />
     ) : (
-      // Carousel slot: behave like an image — autoplay muted loop
       <video
         src={src}
-        style={style}
+        style={videoStyle}
         className={className}
         autoPlay
         muted
         loop
         playsInline
-        preload="metadata"
+        preload="auto"
+        onLoadedMetadata={onLoaded}
       />
     );
   }
