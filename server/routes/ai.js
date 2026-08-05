@@ -122,7 +122,7 @@ router.post("/recommend", async (req, res) => {
 
     // Fetch all active hostels
     const allHostels = await Hostel.find({ status: "active" }).select(
-      "name roomType price distance rating reviewCount verified amenities description"
+      "name roomType price distance rating reviewCount verified amenities description images"
     );
 
     if (allHostels.length === 0) return res.json({ recommendations: [] });
