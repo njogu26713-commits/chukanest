@@ -51,15 +51,27 @@ const isVideo = (src = "") =>
   /\.(mp4|webm|ogg|mov|m4v|mkv)(\?.*)?$/i.test(src) ||
   src.startsWith("blob:") && src.includes("video");
 
-function MediaItem({ src, alt = "", style, className }) {
+function MediaItem({ src, alt = "", style, className, controls = false }) {
   if (isVideo(src)) {
-    return (
+    return controls ? (
+      // Form preview / detail: show native controls
       <video
         src={src}
         style={style}
         className={className}
-        autoPlay={false}
         controls
+        playsInline
+        preload="metadata"
+      />
+    ) : (
+      // Carousel slot: behave like an image — autoplay muted loop
+      <video
+        src={src}
+        style={style}
+        className={className}
+        autoPlay
+        muted
+        loop
         playsInline
         preload="metadata"
       />
@@ -1824,7 +1836,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
               <div className="flex flex-wrap gap-2 mb-3">
                 {imageUrls.map((url, idx) => (
                   <div key={idx} className="relative rounded-xl overflow-hidden shrink-0" style={{ width: 72, height: 72 }}>
-                    <MediaItem src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <MediaItem src={url} alt="" controls={isVideo(url)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     <button
                       type="button"
                       onClick={() => removeImage(idx)}
