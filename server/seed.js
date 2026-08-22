@@ -9,7 +9,7 @@ const HOSTELS_SEED = [
   {
     name: "Greenview Annex", roomType: "Bedsitter",
     price: 6500, distance: 0.4, rating: 4.7, reviewCount: 2, verified: true, availableRooms: 3,
-    landlord: "Mama Njeri", phone: "+254712345001",
+    contactRole: "Landlord", phone: "+254712345001",
     images: [img("gv1"), img("gv2"), img("gv3")],
     amenities: ["wifi", "water", "power", "security", "cctv"],
     description: "A quiet, gated bedsitter block a 5-minute walk from the Chuka University main gate. Popular with second and third-year students for its reliable water supply and fast Wi-Fi.",
@@ -19,7 +19,7 @@ const HOSTELS_SEED = [
   {
     name: "Chuka Scholars Lodge", roomType: "Single",
     price: 4800, distance: 0.9, rating: 4.3, reviewCount: 1, verified: true, availableRooms: 6,
-    landlord: "Mr. Kirimi", phone: "+254712345002",
+    contactRole: "Caretaker", phone: "+254712345002",
     images: [img("cs1"), img("cs2"), img("cs3")],
     amenities: ["wifi", "water", "power", "study", "parking"],
     description: "Budget-friendly single rooms with a shared study room, ideal for first-years. Close to matatu stage for easy access to town.",
@@ -29,7 +29,7 @@ const HOSTELS_SEED = [
   {
     name: "Fig Tree Hostels", roomType: "Shared",
     price: 3500, distance: 1.6, rating: 4.0, reviewCount: 1, verified: false, status: "pending", availableRooms: 2,
-    landlord: "John Mutuma", phone: "+254712345003",
+    contactRole: "Landlord", phone: "+254712345003",
     images: [img("ft1"), img("ft2"), img("ft3")],
     amenities: ["water", "power", "parking"],
     description: "Affordable shared rooms (2 per room) with basic amenities. A short boda ride from campus. Verification pending — proceed with normal caution and always view the room in person.",
@@ -39,7 +39,7 @@ const HOSTELS_SEED = [
   {
     name: "Riverside Girls Residence", roomType: "Bedsitter",
     price: 7200, distance: 0.6, rating: 4.9, reviewCount: 2, verified: true, availableRooms: 1,
-    landlord: "Mrs. Kaburu", phone: "+254712345004",
+    contactRole: "Caretaker", phone: "+254712345004",
     images: [img("rg1"), img("rg2"), img("rg3")],
     amenities: ["wifi", "water", "power", "security", "cctv", "laundry"],
     description: "Premium, fully-fenced residence exclusively for female students with 24-hour security and CCTV throughout the compound. Highly rated for safety.",
@@ -49,7 +49,7 @@ const HOSTELS_SEED = [
   {
     name: "Unity Hostel", roomType: "Single",
     price: 5200, distance: 1.1, rating: 3.9, reviewCount: 1, verified: true, availableRooms: 4,
-    landlord: "Peter Ntongai", phone: "+254712345005",
+    contactRole: "Landlord", phone: "+254712345005",
     images: [img("un1"), img("un2"), img("un3")],
     amenities: ["wifi", "water", "power", "security"],
     description: "Mid-range single rooms with dependable power backup during outages. Popular for its central location near the market.",
@@ -59,7 +59,7 @@ const HOSTELS_SEED = [
   {
     name: "Cedar Court", roomType: "Bedsitter",
     price: 6000, distance: 2.0, rating: 4.4, reviewCount: 1, verified: false, status: "pending", availableRooms: 5,
-    landlord: "Alex Kithinji", phone: "+254712345006",
+    contactRole: "Caretaker", phone: "+254712345006",
     images: [img("cc1"), img("cc2"), img("cc3")],
     amenities: ["wifi", "water", "power", "parking", "study"],
     description: "Spacious bedsitters slightly further from campus, offering better value for money. Boda fare to campus averages KES 50.",
@@ -69,7 +69,7 @@ const HOSTELS_SEED = [
   {
     name: "Chuka Elite Suites", roomType: "Single",
     price: 8900, distance: 0.3, rating: 4.8, reviewCount: 1, verified: true, availableRooms: 2,
-    landlord: "Diana Gatwiri", phone: "+254712345007",
+    contactRole: "Landlord", phone: "+254712345007",
     images: [img("ce1"), img("ce2"), img("ce3")],
     amenities: ["wifi", "water", "power", "security", "cctv", "laundry", "study", "parking"],
     description: "Top-tier furnished single rooms right opposite the main gate. All amenities included — the most fully-equipped listing on ChukaNest.",
@@ -80,7 +80,7 @@ const HOSTELS_SEED = [
   {
     name: "Maple Annex", roomType: "Single",
     price: 5500, distance: 0.7, rating: 0, reviewCount: 0, verified: false, status: "pending", availableRooms: 5,
-    landlord: "Grace Muthoni", phone: "+254799001122",
+    contactRole: "Caretaker", phone: "+254799001122",
     images: [img("ma1"), img("ma2"), img("ma3")],
     amenities: ["water", "power"],
     description: "New listing near campus awaiting verification.",

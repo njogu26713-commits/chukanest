@@ -11,7 +11,7 @@ const hostelSchema = new mongoose.Schema(
     verified: { type: Boolean, default: false },
     status: { type: String, enum: ["active", "pending", "rejected"], default: "active" },
     availableRooms: { type: Number, default: 0 },
-    landlord: { type: String, required: true },
+    contactRole: { type: String, enum: ["Landlord", "Caretaker"], required: true },
     phone: { type: String, required: true },
     images: [String],
     amenities: [String],

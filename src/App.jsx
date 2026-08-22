@@ -148,7 +148,7 @@ function Badge({ children, tone = "neutral" }) {
   );
 }
 
-function PrimaryButton({ children, onClick, icon: Icon, full, variant = "solid", disabled }) {
+function PrimaryButton({ children, onClick, icon: Icon, full, variant = "solid", disabled, className = "" }) {
   const base = "flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50";
   const style =
     variant === "solid"
@@ -157,7 +157,7 @@ function PrimaryButton({ children, onClick, icon: Icon, full, variant = "solid",
       ? { background: "transparent", color: C.primary, border: `1.5px solid ${C.primary}` }
       : { background: C.mint, color: C.primaryDark };
   return (
-    <button onClick={onClick} disabled={disabled} className={`${base} ${full ? "w-full" : ""}`} style={{ ...style, ...fBody }}>
+    <button onClick={onClick} disabled={disabled} className={`${base} ${full ? "w-full" : ""} ${className}`} style={{ ...style, ...fBody }}>
       {Icon && <Icon size={17} />}
       {children}
     </button>
@@ -912,7 +912,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
       </div>
 
       {/* Sort bar */}
-      <div className="flex items-center gap-2 px-4 py-2.5">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
         <span className="text-[12px] font-medium" style={{ ...fBody, color: C.inkSoft }}>{filtered.length} listings · Sort:</span>
         {[["rating", "Top Rated"], ["price_asc", "Cheapest"], ["distance", "Nearest"]].map(([val, label]) => (
           <button
@@ -1172,15 +1172,14 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
             <div>
               <p className="text-[14px] leading-relaxed" style={{ ...fBody, color: C.ink }}>{hostel.description}</p>
               <div className="mt-4 rounded-2xl p-3.5" style={{ background: C.mint }}>
-                <div className="text-[13px] font-semibold mb-2" style={{ ...fBody, color: C.primaryDark }}>Landlord / Contact</div>
-                <div className="text-[14px] font-semibold" style={{ ...fBody, color: C.ink }}>{hostel.landlord}</div>
+                <div className="text-[13px] font-semibold mb-2" style={{ ...fBody, color: C.primaryDark }}>{hostel.contactRole || "Landlord"}</div>
                 <div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>{hostel.phone}</div>
               </div>
             </div>
           )}
 
           {tab === "amenities" && (
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {hostel.amenities.map((key) => {
                 const meta = AMENITY_META[key];
                 if (!meta) return null;
@@ -1268,9 +1267,9 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
       </div>
 
       {/* CTA */}
-      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 md:left-[220px] flex gap-2.5 px-4 pb-2 pt-2" style={{ background: C.surface, borderTop: `1px solid ${C.line}`, zIndex: 20 }}>
-        <PrimaryButton variant="ghost" icon={Phone} onClick={() => window.open(`tel:${hostel.phone}`, "_self")}>Call</PrimaryButton>
-        <PrimaryButton full icon={MessageCircle} onClick={() => window.open(`https://wa.me/${hostel.phone.replace(/\D/g, "").replace(/^0/, "254")}`, "_blank")}>Contact Landlord</PrimaryButton>
+      <div className="fixed bottom-16 left-0 right-0 flex gap-2 px-3 pb-2 pt-2 sm:px-4 md:bottom-0 md:left-[220px] md:flex-row" style={{ background: C.surface, borderTop: `1px solid ${C.line}`, zIndex: 20 }}>
+        <PrimaryButton className="min-w-0 flex-1" variant="ghost" icon={Phone} onClick={() => window.open(`tel:${hostel.phone}`, "_self")}>Call</PrimaryButton>
+        <PrimaryButton className="min-w-0 flex-1" full icon={MessageCircle} onClick={() => window.open(`https://wa.me/${hostel.phone.replace(/\D/g, "").replace(/^0/, "254")}`, "_blank")}>Contact {hostel.contactRole || "Landlord"}</PrimaryButton>
       </div>
     </div>
   );
@@ -1629,14 +1628,14 @@ const AMENITY_OPTIONS = [
 function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   const isEdit = !!hostel;
   const empty = {
-    name: "", landlord: "", phone: "", roomType: "Bedsitter",
+    name: "", contactRole: "Landlord", phone: "", roomType: "Bedsitter",
     price: "", distance: "", availableRooms: "", description: "",
     amenities: [], status: "active",
   };
 
   const toForm = (h) => ({
     name: h.name ?? "",
-    landlord: h.landlord ?? "",
+    contactRole: h.contactRole ?? (h.landlord === "Caretaker" ? "Caretaker" : "Landlord"),
     phone: h.phone ?? "",
     roomType: h.roomType ?? "Bedsitter",
     price: h.price ?? "",
@@ -1690,8 +1689,8 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.landlord.trim() || !form.phone.trim()) {
-      setError("Name, landlord and phone are required");
+    if (!form.name.trim() || !form.contactRole || !form.phone.trim()) {
+      setError("Name, contact role and phone are required");
       return;
     }
     if (!form.price || !form.distance) {
@@ -1746,11 +1745,13 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
             <input style={inputStyle} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Greenview Hostel" />
           </div>
 
-          {/* Landlord + Phone */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Contact role + Phone */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <div className="mb-1.5" style={labelStyle}>Landlord *</div>
-              <input style={inputStyle} value={form.landlord} onChange={(e) => set("landlord", e.target.value)} placeholder="Full name" />
+              <div className="mb-1.5" style={labelStyle}>Contact role *</div>
+              <select style={selectStyle} value={form.contactRole} onChange={(e) => set("contactRole", e.target.value)}>
+                {["Landlord", "Caretaker"].map((role) => <option key={role}>{role}</option>)}
+              </select>
             </div>
             <div>
               <div className="mb-1.5" style={labelStyle}>Phone *</div>
@@ -1767,7 +1768,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
           </div>
 
           {/* Price + Distance + Rooms */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
               <div className="mb-1.5" style={labelStyle}>Price (KES) *</div>
               <input style={inputStyle} type="number" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="4500" />
@@ -2116,7 +2117,7 @@ function AdminScreen({ showToast }) {
                         : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.goldSoft, color: C.gold }}>Unverified</span>
                       }
                     </div>
-                    <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{h.landlord} · {h.roomType}</div>
+                    <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{h.contactRole || "Landlord"} · {h.roomType}</div>
                     <div className="text-[12px] font-semibold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo · {h.availableRooms} rooms</div>
                   </div>
                 </div>
@@ -2229,11 +2230,11 @@ function AdminScreen({ showToast }) {
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div>
                       <div className="text-[15px] font-bold" style={{ ...fDisplay, color: C.ink }}>{v.name}</div>
-                      <div className="text-[12px] mt-0.5" style={{ ...fBody, color: C.inkSoft }}>by {v.landlord} · {v.phone}</div>
+                      <div className="text-[12px] mt-0.5" style={{ ...fBody, color: C.inkSoft }}>{v.contactRole || "Landlord"} · {v.phone}</div>
                     </div>
                     <Badge tone="gold">Pending</Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="grid grid-cols-1 gap-2 mb-4 sm:grid-cols-3">
                     {[
                       { label: "Rooms", value: v.availableRooms },
                       { label: "Price/mo", value: `KES ${v.price?.toLocaleString()}` },
@@ -2792,7 +2793,7 @@ export default function App() {
       <Toast toast={toast} />
       <AppNav tab={tab} setTab={setTab} role={role} dark={dark} toggleDark={toggleDark} />
 
-      <div className="flex-1 overflow-hidden md:ml-[220px]">
+      <div className="min-w-0 min-h-0 flex-1 overflow-hidden md:ml-[220px]">
         {openHostel ? (
           <DetailScreen
             hostel={openHostel}
@@ -2810,7 +2811,7 @@ export default function App() {
             {tab === "home" && (
               hostelLoading ? (
                 <div className="h-full overflow-y-auto px-4 pt-4 pb-24">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {Array.from({ length: 6 }).map((_, i) => <HostelCardSkeleton key={i} />)}
                   </div>
                 </div>

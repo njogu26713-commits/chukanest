@@ -40,7 +40,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
 // PATCH /api/hostels/:id — admin only
 router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const hostel = await Hostel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const hostel = await Hostel.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!hostel) return res.status(404).json({ error: "Not found" });
     res.json(hostel);
   } catch (err) {
