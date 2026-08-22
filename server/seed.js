@@ -7,7 +7,7 @@ const img = (seed, w = 800, h = 600) => `https://picsum.photos/seed/${seed}/${w}
 
 const HOSTELS_SEED = [
   {
-    name: "Greenview Annex", roomType: "Bedsitter",
+    name: "Greenview Annex", location: "Near Chuka University main gate", roomType: "Bedsitter",
     price: 6500, distance: 0.4, rating: 4.7, reviewCount: 2, verified: true, availableRooms: 3,
     contactRole: "Landlord", phone: "+254712345001",
     images: [img("gv1"), img("gv2"), img("gv3")],
@@ -17,7 +17,7 @@ const HOSTELS_SEED = [
     latlng: [-0.3353, 37.6462],
   },
   {
-    name: "Chuka Scholars Lodge", roomType: "Single",
+    name: "Chuka Scholars Lodge", location: "Near Chuka University main gate", roomType: "Single",
     price: 4800, distance: 0.9, rating: 4.3, reviewCount: 1, verified: true, availableRooms: 6,
     contactRole: "Caretaker", phone: "+254712345002",
     images: [img("cs1"), img("cs2"), img("cs3")],
@@ -27,7 +27,7 @@ const HOSTELS_SEED = [
     latlng: [-0.3248, 37.6578],
   },
   {
-    name: "Fig Tree Hostels", roomType: "Shared",
+    name: "Fig Tree Hostels", location: "Chuka Town, near matatu stage", roomType: "Shared",
     price: 3500, distance: 1.6, rating: 4.0, reviewCount: 1, verified: false, status: "pending", availableRooms: 2,
     contactRole: "Landlord", phone: "+254712345003",
     images: [img("ft1"), img("ft2"), img("ft3")],
@@ -37,7 +37,7 @@ const HOSTELS_SEED = [
     latlng: [-0.3458, 37.6638],
   },
   {
-    name: "Riverside Girls Residence", roomType: "Bedsitter",
+    name: "Riverside Girls Residence", location: "Near Chuka University girls’ residence area", roomType: "Bedsitter",
     price: 7200, distance: 0.6, rating: 4.9, reviewCount: 2, verified: true, availableRooms: 1,
     contactRole: "Caretaker", phone: "+254712345004",
     images: [img("rg1"), img("rg2"), img("rg3")],
@@ -47,7 +47,7 @@ const HOSTELS_SEED = [
     latlng: [-0.3368, 37.6443],
   },
   {
-    name: "Unity Hostel", roomType: "Single",
+    name: "Unity Hostel", location: "Chuka Town, near the market", roomType: "Single",
     price: 5200, distance: 1.1, rating: 3.9, reviewCount: 1, verified: true, availableRooms: 4,
     contactRole: "Landlord", phone: "+254712345005",
     images: [img("un1"), img("un2"), img("un3")],
@@ -57,7 +57,7 @@ const HOSTELS_SEED = [
     latlng: [-0.3418, 37.6598],
   },
   {
-    name: "Cedar Court", roomType: "Bedsitter",
+    name: "Cedar Court", location: "Kianjagi Road, Chuka", roomType: "Bedsitter",
     price: 6000, distance: 2.0, rating: 4.4, reviewCount: 1, verified: false, status: "pending", availableRooms: 5,
     contactRole: "Caretaker", phone: "+254712345006",
     images: [img("cc1"), img("cc2"), img("cc3")],
@@ -67,7 +67,7 @@ const HOSTELS_SEED = [
     latlng: [-0.3148, 37.6678],
   },
   {
-    name: "Chuka Elite Suites", roomType: "Single",
+    name: "Chuka Elite Suites", location: "Opposite Chuka University main gate", roomType: "Single",
     price: 8900, distance: 0.3, rating: 4.8, reviewCount: 1, verified: true, availableRooms: 2,
     contactRole: "Landlord", phone: "+254712345007",
     images: [img("ce1"), img("ce2"), img("ce3")],
@@ -78,7 +78,7 @@ const HOSTELS_SEED = [
   },
   // Additional pending verification
   {
-    name: "Maple Annex", roomType: "Single",
+    name: "Maple Annex", location: "Near Chuka University, awaiting verification", roomType: "Single",
     price: 5500, distance: 0.7, rating: 0, reviewCount: 0, verified: false, status: "pending", availableRooms: 5,
     contactRole: "Caretaker", phone: "+254799001122",
     images: [img("ma1"), img("ma2"), img("ma3")],

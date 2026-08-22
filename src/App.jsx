@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Pencil, LogOut, Mail, Lock,
   BarChart3, Users, LayoutDashboard, TrendingUp, AlertTriangle, CheckCircle2,
   SlidersHorizontal, ImagePlus, Building2, ArrowLeft, Eye, EyeOff, Flag, Clock,
-  ThumbsUp, MoreVertical, Sparkles, Loader2, Bot, Send, Moon, Sun
+  ThumbsUp, MoreVertical, Sparkles, Loader2, Bot, Send, Moon, Sun, Bird
 } from "lucide-react";
 import { api, saveAuth, loadAuth, clearAuth } from "./api.js";
 
@@ -197,6 +197,18 @@ function Spinner({ size = 32, color }) {
 }
 
 /* ---------------------------------- SKELETON ---------------------------------- */
+
+function FlyingBirdSpinner({ label = "Signing you in…" }) {
+  return (
+    <span className="inline-flex items-center justify-center gap-2" role="status" aria-live="polite">
+      <span className="relative inline-flex h-5 w-8 items-center justify-center">
+        <span className="absolute left-0 top-1 h-px w-2 rounded-full" style={{ background: C.primary, opacity: 0.45, animation: "cn-bird-trail 1s ease-in-out infinite" }} />
+        <Bird size={20} strokeWidth={2.5} color={C.primary} style={{ animation: "cn-bird-fly 1s ease-in-out infinite" }} />
+      </span>
+      {label}
+    </span>
+  );
+}
 
 function Sk({ w = "100%", h = 16, r = 10, className = "" }) {
   return (
@@ -410,8 +422,14 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
             <span className="text-[13px] font-semibold" style={{ ...fBody, color: C.ink }}>{hostel.rating}</span>
           </div>
         </div>
-        <div className="mt-1 flex items-center gap-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>
-          <MapPin size={12} /> {hostel.distance} km from Chuka University
+        {hostel.location && (
+          <div className="mt-1 flex min-w-0 items-center gap-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>
+            <MapPin size={12} className="shrink-0" />
+            <span className="truncate">{hostel.location}</span>
+          </div>
+        )}
+        <div className="mt-1 flex items-center gap-1 text-[12px]" style={{ ...fBody, color: C.inkSoft }}>
+          <Navigation size={12} className="shrink-0" /> {hostel.distance} km from Chuka University
         </div>
         <div className="mt-2.5 flex items-center justify-between">
           <div style={{ ...fMono, color: C.primaryDark }} className="text-[16px] font-bold">
@@ -436,6 +454,8 @@ const AUTH_ANIM_CSS = `
 @keyframes cn-orb-b      { 0%,100%{transform:scale(1)   translate(0,0);}    50%{transform:scale(0.92) translate(-16px,18px);} }
 @keyframes cn-orb-c      { 0%,100%{transform:scale(1)   translate(0,0);}    50%{transform:scale(1.06) translate(10px,14px);}  }
 @keyframes cn-pulse-ring { 0%{box-shadow:0 0 0 0 rgba(47,143,94,0.4);} 70%{box-shadow:0 0 0 10px rgba(47,143,94,0);} 100%{box-shadow:0 0 0 0 rgba(47,143,94,0);} }
+@keyframes cn-bird-fly { 0%,100%{transform:translate3d(-3px,2px,0) rotate(-8deg) scale(.92);} 50%{transform:translate3d(4px,-3px,0) rotate(7deg) scale(1.05);} }
+@keyframes cn-bird-trail { 0%,100%{transform:translateX(0);opacity:.2;} 50%{transform:translateX(-3px);opacity:.7;} }
 .cn-auth-input-wrap { transition: border-color 0.2s, box-shadow 0.2s; }
 .cn-auth-input-wrap:focus-within { box-shadow: 0 0 0 3px rgba(47,143,94,0.18); }
 .cn-auth-btn-primary:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); }
@@ -521,6 +541,7 @@ function AuthScreen({ onAuthed, showToast }) {
   };
 
   const handleSubmit = async () => {
+    if (loading) return;
     setError("");
     if (!email.trim() || !password.trim()) {
       setError("Please fill in all fields");
@@ -667,9 +688,9 @@ function AuthScreen({ onAuthed, showToast }) {
             onClick={handleSubmit}
             disabled={loading}
             className="cn-auth-btn-primary w-full rounded-2xl py-3 text-sm font-bold text-white"
-            style={{ ...fBody, background: loading ? C.primaryLight : C.primary, opacity: loading ? 0.8 : 1 }}
+            style={{ ...fBody, background: loading ? C.mint : C.primary, color: loading ? C.primaryDark : "#fff", opacity: loading ? 0.9 : 1 }}
           >
-            {loading ? "Please wait…" : mode === "login" ? "Log In" : "Create Account"}
+            {loading ? <FlyingBirdSpinner label={mode === "login" ? "Signing you in…" : "Creating account…"} /> : mode === "login" ? "Log In" : "Create Account"}
           </button>
         </div>
 
@@ -1130,8 +1151,14 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
                 {hostel.verified && <VerifiedSeal size="sm" />}
               </div>
               <div className="mt-1 flex items-center gap-2 flex-wrap">
+                {hostel.location && (
+                  <div className="flex min-w-0 items-center gap-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>
+                    <MapPin size={12} className="shrink-0" />
+                    <span className="max-w-[230px] truncate">{hostel.location}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>
-                  <MapPin size={12} /> {hostel.distance} km from campus
+                  <Navigation size={12} className="shrink-0" /> {hostel.distance} km from campus
                 </div>
 
                 <Badge>{hostel.roomType}</Badge>
@@ -1628,13 +1655,14 @@ const AMENITY_OPTIONS = [
 function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   const isEdit = !!hostel;
   const empty = {
-    name: "", contactRole: "Landlord", phone: "", roomType: "Bedsitter",
+    name: "", location: "", contactRole: "Landlord", phone: "", roomType: "Bedsitter",
     price: "", distance: "", availableRooms: "", description: "",
-    amenities: [], status: "active",
+    amenities: [], status: "active", latlng: [],
   };
 
   const toForm = (h) => ({
     name: h.name ?? "",
+    location: h.location ?? "",
     contactRole: h.contactRole ?? (h.landlord === "Caretaker" ? "Caretaker" : "Landlord"),
     phone: h.phone ?? "",
     roomType: h.roomType ?? "Bedsitter",
@@ -1644,6 +1672,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
     description: h.description ?? "",
     amenities: h.amenities ?? [],
     status: h.status ?? "active",
+    latlng: h.latlng ?? [],
   });
 
   const [form, setForm] = useState(isEdit ? toForm(hostel) : empty);
@@ -1653,6 +1682,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [urlInput, setUrlInput] = useState("");
+  const [detectingLocation, setDetectingLocation] = useState(false);
   const fileInputRef = useRef(null);
 
   const addUrlInput = () => {
@@ -1663,6 +1693,44 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   };
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const detectArea = () => {
+    if (!navigator.geolocation) {
+      setError("GPS detection is not supported by this browser");
+      return;
+    }
+
+    setDetectingLocation(true);
+    setError("");
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      const lat = Number(coords.latitude.toFixed(6));
+      const lng = Number(coords.longitude.toFixed(6));
+      set("latlng", [lat, lng]);
+
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+        if (!response.ok) throw new Error("Reverse geocoding failed");
+        const data = await response.json();
+        const address = data.address || {};
+        const parts = [
+          address.road,
+          address.neighbourhood,
+          address.suburb,
+          address.village,
+          address.town,
+          address.city,
+        ].filter(Boolean).filter((part, index, list) => list.indexOf(part) === index);
+        set("location", parts.slice(0, 4).join(", ") || data.display_name || `GPS: ${lat}, ${lng}`);
+      } catch {
+        set("location", `GPS: ${lat}, ${lng}`);
+      } finally {
+        setDetectingLocation(false);
+      }
+    }, (geoError) => {
+      setDetectingLocation(false);
+      setError(geoError.code === 1 ? "Allow location access to detect the area" : "Unable to detect the area. Enter it manually.");
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
+  };
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
@@ -1689,8 +1757,8 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.contactRole || !form.phone.trim()) {
-      setError("Name, contact role and phone are required");
+    if (!form.name.trim() || !form.location.trim() || !form.contactRole || !form.phone.trim()) {
+      setError("Name, location, contact role and phone are required");
       return;
     }
     if (!form.price || !form.distance) {
@@ -1743,6 +1811,25 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
           <div>
             <div className="mb-1.5" style={labelStyle}>Hostel name *</div>
             <input style={inputStyle} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Greenview Hostel" />
+          </div>
+
+          {/* Location */}
+          <div>
+            <div className="mb-1.5" style={labelStyle}>Location *</div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input className="min-w-0 flex-1" style={inputStyle} value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="e.g. Chuka Town, near main gate" />
+              <button
+                type="button"
+                onClick={detectArea}
+                disabled={detectingLocation}
+                className="flex shrink-0 items-center justify-center gap-1.5 rounded-[14px] px-3.5 py-2.5 text-[12px] font-semibold disabled:opacity-60"
+                style={{ ...fBody, background: C.mint, color: C.primaryDark, border: `1px solid ${C.line}` }}
+              >
+                {detectingLocation ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+                {detectingLocation ? "Detecting…" : "Detect area"}
+              </button>
+            </div>
+            <div className="mt-1 text-[10px]" style={{ ...fBody, color: C.inkSoft }}>Use GPS to fill this field, or enter the area manually.</div>
           </div>
 
           {/* Contact role + Phone */}
@@ -1909,7 +1996,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
 
 /* ---------------------------------- ADMIN SCREEN ---------------------------------- */
 
-function AdminScreen({ showToast }) {
+function AdminScreen({ showToast, onHostelSaved }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [listings, setListings] = useState([]);
   const [pendingVerifications, setPendingVerifications] = useState([]);
@@ -2117,7 +2204,7 @@ function AdminScreen({ showToast }) {
                         : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.goldSoft, color: C.gold }}>Unverified</span>
                       }
                     </div>
-                    <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{h.contactRole || "Landlord"} · {h.roomType}</div>
+                    <div className="text-[12px] truncate" style={{ ...fBody, color: C.inkSoft }}>{h.location || "Location not provided"} · {h.contactRole || "Landlord"} · {h.roomType}</div>
                     <div className="text-[12px] font-semibold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo · {h.availableRooms} rooms</div>
                   </div>
                 </div>
@@ -2230,7 +2317,7 @@ function AdminScreen({ showToast }) {
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div>
                       <div className="text-[15px] font-bold" style={{ ...fDisplay, color: C.ink }}>{v.name}</div>
-                      <div className="text-[12px] mt-0.5" style={{ ...fBody, color: C.inkSoft }}>{v.contactRole || "Landlord"} · {v.phone}</div>
+                      <div className="text-[12px] mt-0.5 truncate" style={{ ...fBody, color: C.inkSoft }}>{v.location || "Location not provided"} · {v.contactRole || "Landlord"} · {v.phone}</div>
                     </div>
                     <Badge tone="gold">Pending</Badge>
                   </div>
@@ -2348,6 +2435,7 @@ function AdminScreen({ showToast }) {
             } else {
               setListings((l) => [...l, norm]);
             }
+            onHostelSaved?.(norm, isEdit);
           }}
           showToast={showToast}
         />
@@ -2718,6 +2806,17 @@ export default function App() {
     setTab("home");
   };
 
+  const handleAdminHostelSaved = (saved, isEdit) => {
+    setHostels((prev) => {
+      if (saved.status !== "active") {
+        return isEdit ? prev.filter((hostel) => hostel.id !== saved.id) : prev;
+      }
+      return isEdit
+        ? prev.map((hostel) => hostel.id === saved.id ? saved : hostel)
+        : [...prev, saved];
+    });
+  };
+
   const handleLogout = () => {
     clearAuth();
     setRole(null);
@@ -2822,7 +2921,7 @@ export default function App() {
             {tab === "map" && <MapScreen hostels={hostels} onOpen={(id) => setOpenHostelId(id)} />}
             {tab === "favs" && <FavouritesScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} />}
             {tab === "ai" && <AiScreen role={role} />}
-            {tab === "admin" && role === "admin" && <AdminScreen showToast={showToast} />}
+            {tab === "admin" && role === "admin" && <AdminScreen showToast={showToast} onHostelSaved={handleAdminHostelSaved} />}
             {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} onOpenChat={() => setTab("ai")} />}
           </div>
         )}
