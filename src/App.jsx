@@ -1332,6 +1332,20 @@ function FavouritesScreen({ hostels, favs, onToggleFav, onOpen }) {
 
 const CHUKA_UNIVERSITY = [-0.3317, 37.6500];
 
+const getDistanceFromCampus = (latlng) => {
+  if (!Array.isArray(latlng) || latlng.length < 2) return null;
+  const [lat, lng] = latlng.map(Number);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const toRadians = (value) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const deltaLat = toRadians(lat - CHUKA_UNIVERSITY[0]);
+  const deltaLng = toRadians(lng - CHUKA_UNIVERSITY[1]);
+  const a = Math.sin(deltaLat / 2) ** 2
+    + Math.cos(toRadians(CHUKA_UNIVERSITY[0])) * Math.cos(toRadians(lat)) * Math.sin(deltaLng / 2) ** 2;
+  const distance = earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number(distance.toFixed(1));
+};
+
 function MapScreen({ hostels, onOpen }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -1705,7 +1719,9 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
       const lat = Number(coords.latitude.toFixed(6));
       const lng = Number(coords.longitude.toFixed(6));
-      set("latlng", [lat, lng]);
+      const detectedLatLng = [lat, lng];
+      set("latlng", detectedLatLng);
+      set("distance", getDistanceFromCampus(detectedLatLng));
 
       try {
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
@@ -1757,12 +1773,16 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   };
 
   const handleSave = async () => {
+    const gpsDistance = getDistanceFromCampus(form.latlng);
+    const manualDistance = form.distance === "" ? null : Number(form.distance);
+    const distance = gpsDistance ?? manualDistance;
+
     if (!form.name.trim() || !form.location.trim() || !form.contactRole || !form.phone.trim()) {
       setError("Name, location, contact role and phone are required");
       return;
     }
-    if (!form.price || !form.distance) {
-      setError("Price and distance are required");
+    if (!form.price || distance === null || !Number.isFinite(distance) || distance < 0) {
+      setError("Price and a valid distance are required");
       return;
     }
     setSaving(true);
@@ -1771,7 +1791,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
       const payload = {
         ...form,
         price: Number(form.price),
-        distance: Number(form.distance),
+        distance,
         availableRooms: Number(form.availableRooms) || 0,
         images: imageUrls,
       };
@@ -1861,8 +1881,19 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
               <input style={inputStyle} type="number" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="4500" />
             </div>
             <div>
-              <div className="mb-1.5" style={labelStyle}>Distance (km) *</div>
-              <input style={inputStyle} type="number" step="0.1" value={form.distance} onChange={(e) => set("distance", e.target.value)} placeholder="0.5" />
+              <div className="mb-1.5" style={labelStyle}>Distance (km) {getDistanceFromCampus(form.latlng) !== null ? "(auto)" : "*"}</div>
+              <input
+                style={inputStyle}
+                type="number"
+                step="0.1"
+                value={getDistanceFromCampus(form.latlng) ?? form.distance}
+                onChange={(e) => set("distance", e.target.value)}
+                readOnly={getDistanceFromCampus(form.latlng) !== null}
+                placeholder="0.5"
+              />
+              {getDistanceFromCampus(form.latlng) !== null && (
+                <div className="mt-1 text-[10px]" style={{ ...fBody, color: C.primaryDark }}>Calculated from the detected GPS location.</div>
+              )}
             </div>
             <div>
               <div className="mb-1.5" style={labelStyle}>Rooms</div>
