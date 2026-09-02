@@ -321,6 +321,30 @@ function TopBar({ title, onBack, right }) {
   );
 }
 
+/* ---------------------------------- AVAILABILITY ---------------------------------- */
+
+function AvailabilityBadge({ rooms, compact = false }) {
+  const count = Math.max(0, Number(rooms) || 0);
+  const isFull = count === 0;
+  return (
+    <div
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold"
+      style={{
+        background: isFull ? C.dangerSoft : "rgba(255,255,255,0.94)",
+        color: isFull ? C.danger : C.primaryDark,
+        border: `1px solid ${isFull ? C.danger : C.primary}`,
+        ...fMono,
+      }}
+    >
+      {isFull ? (
+        <><AlertTriangle size={12} /> 0 full!</>
+      ) : (
+        <><span style={{ width: 7, height: 7, borderRadius: "50%", background: C.primary, display: "inline-block" }} /> {count} room{count === 1 ? "" : "s"}{compact ? " available" : " left"}</>
+      )}
+    </div>
+  );
+}
+
 /* ---------------------------------- HOSTEL CARD ---------------------------------- */
 
 function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
@@ -408,8 +432,8 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
           </div>
         )}
 
-        <div className="absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: C.ink, color: "#fff", ...fMono }}>
-          {hostel.availableRooms} rooms left
+        <div className="absolute bottom-3 right-3">
+          <AvailabilityBadge rooms={hostel.availableRooms} />
         </div>
       </div>
 
@@ -1174,9 +1198,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
             <StarRow rating={Math.round(hostel.rating)} />
             <span className="text-[13px] font-semibold" style={{ ...fBody, color: C.ink }}>{hostel.rating}</span>
             <span className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>({hostel.reviewCount} reviews)</span>
-            {hostel.availableRooms <= 2 && (
-              <Badge tone="danger">{hostel.availableRooms} room{hostel.availableRooms > 1 ? "s" : ""} left!</Badge>
-            )}
+            <AvailabilityBadge rooms={hostel.availableRooms} compact />
           </div>
         </div>
 
@@ -1670,7 +1692,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   const isEdit = !!hostel;
   const empty = {
     name: "", location: "", contactRole: "Landlord", phone: "", roomType: "Bedsitter",
-    price: "", distance: "", availableRooms: "", description: "",
+    price: "", distance: "", availableRooms: "", availability: "available", description: "",
     amenities: [], status: "active", latlng: [],
   };
 
@@ -1683,6 +1705,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
     price: h.price ?? "",
     distance: h.distance ?? "",
     availableRooms: h.availableRooms ?? "",
+    availability: Number(h.availableRooms) > 0 ? "available" : "full",
     description: h.description ?? "",
     amenities: h.amenities ?? [],
     status: h.status ?? "active",
@@ -1785,6 +1808,10 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
       setError("Price and a valid distance are required");
       return;
     }
+    if (form.availability === "available" && (!form.availableRooms || Number(form.availableRooms) < 1)) {
+      setError("Enter the number of available rooms, or choose Full");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -1792,7 +1819,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
         ...form,
         price: Number(form.price),
         distance,
-        availableRooms: Number(form.availableRooms) || 0,
+        availableRooms: form.availability === "full" ? 0 : Number(form.availableRooms),
         images: imageUrls,
       };
       const saved = isEdit
@@ -1896,8 +1923,28 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
               )}
             </div>
             <div>
-              <div className="mb-1.5" style={labelStyle}>Rooms</div>
-              <input style={inputStyle} type="number" value={form.availableRooms} onChange={(e) => set("availableRooms", e.target.value)} placeholder="10" />
+              <div className="mb-1.5" style={labelStyle}>Available rooms</div>
+              <input
+                style={{ ...inputStyle, opacity: form.availability === "full" ? 0.55 : 1 }}
+                type="number"
+                min="1"
+                value={form.availableRooms}
+                onChange={(e) => set("availableRooms", e.target.value)}
+                placeholder="5"
+                disabled={form.availability === "full"}
+              />
+            </div>
+          </div>
+
+          {/* Availability */}
+          <div>
+            <div className="mb-1.5" style={labelStyle}>Availability</div>
+            <select style={selectStyle} value={form.availability} onChange={(e) => set("availability", e.target.value)}>
+              <option value="available">Vacancies available</option>
+              <option value="full">Full — no vacancies</option>
+            </select>
+            <div className="mt-1 text-[10px]" style={{ ...fBody, color: form.availability === "full" ? C.danger : C.primaryDark }}>
+              {form.availability === "full" ? "This listing will show a red 0 full! label." : "This listing will show a green dot with the room count."}
             </div>
           </div>
 
@@ -2236,7 +2283,10 @@ function AdminScreen({ showToast, onHostelSaved }) {
                       }
                     </div>
                     <div className="text-[12px] truncate" style={{ ...fBody, color: C.inkSoft }}>{h.location || "Location not provided"} · {h.contactRole || "Landlord"} · {h.roomType}</div>
-                    <div className="text-[12px] font-semibold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo · {h.availableRooms} rooms</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span className="text-[12px] font-semibold" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo</span>
+                      <AvailabilityBadge rooms={h.availableRooms} compact />
+                    </div>
                   </div>
                 </div>
                 <div className="flex border-t" style={{ borderColor: C.line }}>
