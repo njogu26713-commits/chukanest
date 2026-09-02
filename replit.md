@@ -39,6 +39,9 @@ Add these variables to the Railway service before deploying:
 | `GROQ_API_KEY` | No | Enables AI search, recommendations, and chat |
 | `GOOGLE_CLIENT_ID` | No | Enables Google sign-in |
 | `ADMIN_INVITE_CODE` | No | Enables admin account registration |
+| `CLOUDINARY_CLOUD_NAME` | Yes for uploads | Cloudinary cloud name for persistent hostel media |
+| `CLOUDINARY_API_KEY` | Yes for uploads | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Yes for uploads | Cloudinary API secret |
 
 The first server start seeds the MongoDB database when the `hostels` collection is empty.
 
@@ -49,6 +52,9 @@ The first server start seeds the MongoDB database when the `hostels` collection 
 | `MONGODB_URI` | MongoDB Atlas connection string |
 | `SESSION_SECRET` | JWT signing secret |
 | `GROQ_API_KEY` | Groq API key for AI search, recommendations, and chat |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for persistent image and video storage |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
 
 ## Project structure
 
