@@ -1488,9 +1488,119 @@ function MapScreen({ hostels, onOpen }) {
   );
 }
 
+/* ---------------------------------- SUPPORT SCREEN ---------------------------------- */
+
+const FALLBACK_SUPPORT_SETTINGS = {
+  supportPhone: "+254 700 000 000",
+  whatsappNumber: "+254 700 000 000",
+  email: "support@chukanest.co.ke",
+  officeHours: "Mon–Fri, 8:00 AM–5:00 PM",
+  faqs: [
+    { question: "How do I know a hostel is verified?", answer: "Look for the gold Verified badge. Our team checks the listing details before it is marked as verified." },
+    { question: "How do I report a problem with a listing?", answer: "Open the listing and contact the administrator using the support options below. Include the hostel name and what went wrong." },
+    { question: "Can I update or remove my review?", answer: "Contact the administrator with your account email and the review details. The support team will help you with the next step." },
+    { question: "How can I add my hostel?", answer: "Contact the administrator with the hostel name, location, room types, prices, available rooms, and clear photos." },
+    { question: "Is ChukaNest available outside Chuka University?", answer: "ChukaNest is currently focused on student housing around Chuka University and nearby areas." },
+  ],
+};
+
+function normalizeSupportSettings(settings) {
+  return {
+    ...FALLBACK_SUPPORT_SETTINGS,
+    ...(settings || {}),
+    faqs: Array.isArray(settings?.faqs) && settings.faqs.length > 0 ? settings.faqs : FALLBACK_SUPPORT_SETTINGS.faqs,
+  };
+}
+
+function formatWhatsAppNumber(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.startsWith("0") ? `254${digits.slice(1)}` : digits;
+}
+
+function SupportScreen({ showToast, onBack }) {
+  const [settings, setSettings] = useState(FALLBACK_SUPPORT_SETTINGS);
+  const [openFaq, setOpenFaq] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getSupport()
+      .then((data) => setSettings(normalizeSupportSettings(data)))
+      .catch(() => showToast("Showing default support details"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const whatsappLink = `https://wa.me/${formatWhatsAppNumber(settings.whatsappNumber)}`;
+
+  return (
+    <div className="flex h-full flex-col" style={{ background: C.bg }}>
+      <TopBar title="Help & Support" onBack={onBack} />
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 md:pb-6">
+        <div className="mx-auto max-w-3xl space-y-4">
+          <div className="rounded-3xl p-5 md:p-7" style={{ background: `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`, color: "#fff" }}>
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: "rgba(255,255,255,0.16)" }}>
+                <MessageCircle size={22} color="#fff" />
+              </div>
+              <div>
+                <div className="text-[20px] font-extrabold" style={fDisplay}>How can we help?</div>
+                <p className="mt-1 max-w-xl text-[13px] leading-relaxed" style={{ ...fBody, color: "rgba(255,255,255,0.78)" }}>
+                  Find quick answers or contact the ChukaNest administrator for help with listings, reviews, accounts, and safety concerns.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <section>
+            <div className="mb-2 px-1 text-[12px] font-bold uppercase tracking-[0.08em]" style={{ ...fBody, color: C.inkSoft }}>Contact administrator</div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <a href={`tel:${settings.supportPhone}`} className="rounded-2xl p-4 transition-transform active:scale-[0.98]" style={{ background: C.surface, border: `1px solid ${C.line}`, textDecoration: "none" }}>
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: C.mint }}><Phone size={17} color={C.primaryDark} /></div>
+                <div className="text-[12px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>Call us</div>
+                <div className="mt-1 break-words text-[13px] font-bold" style={{ ...fMono, color: C.ink }}>{settings.supportPhone}</div>
+              </a>
+              <a href={whatsappLink} target="_blank" rel="noreferrer" className="rounded-2xl p-4 transition-transform active:scale-[0.98]" style={{ background: C.surface, border: `1px solid ${C.line}`, textDecoration: "none" }}>
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: C.mint }}><MessageCircle size={17} color={C.primaryDark} /></div>
+                <div className="text-[12px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>WhatsApp</div>
+                <div className="mt-1 break-words text-[13px] font-bold" style={{ ...fMono, color: C.ink }}>{settings.whatsappNumber}</div>
+              </a>
+              <a href={`mailto:${settings.email}`} className="rounded-2xl p-4 transition-transform active:scale-[0.98]" style={{ background: C.surface, border: `1px solid ${C.line}`, textDecoration: "none" }}>
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: C.mint }}><Mail size={17} color={C.primaryDark} /></div>
+                <div className="text-[12px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>Email support</div>
+                <div className="mt-1 break-words text-[13px] font-bold" style={{ ...fBody, color: C.ink }}>{settings.email}</div>
+              </a>
+            </div>
+            <div className="mt-2 px-1 text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Office hours: {settings.officeHours}</div>
+          </section>
+
+          <section>
+            <div className="mb-2 px-1 text-[12px] font-bold uppercase tracking-[0.08em]" style={{ ...fBody, color: C.inkSoft }}>Frequently asked questions</div>
+            <div className="overflow-hidden rounded-2xl" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+              {loading && <div className="px-4 py-5 text-[13px]" style={{ ...fBody, color: C.inkSoft }}>Loading support information…</div>}
+              {!loading && settings.faqs.map((faq, index) => (
+                <div key={`${faq.question}-${index}`} style={{ borderBottom: index < settings.faqs.length - 1 ? `1px solid ${C.line}` : "none" }}>
+                  <button onClick={() => setOpenFaq(openFaq === index ? null : index)} className="flex w-full items-center gap-3 px-4 py-4 text-left">
+                    <span className="flex-1 text-[13px] font-semibold" style={{ ...fBody, color: C.ink }}>{faq.question}</span>
+                    <ChevronDown size={16} color={C.inkSoft} style={{ transform: openFaq === index ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+                  </button>
+                  {openFaq === index && <div className="px-4 pb-4 text-[13px] leading-relaxed" style={{ ...fBody, color: C.inkSoft }}>{faq.answer}</div>}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <div className="rounded-2xl p-4" style={{ background: C.mint, border: `1px solid ${C.primary}22` }}>
+            <div className="text-[13px] font-bold" style={{ ...fDisplay, color: C.primaryDark }}>Still need help?</div>
+            <div className="mt-1 text-[12px] leading-relaxed" style={{ ...fBody, color: C.inkSoft }}>Contact the administrator and include as much detail as possible so we can respond quickly.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------- PROFILE SCREEN ---------------------------------- */
 
-function ProfileScreen({ role, currentUser, onLogout, showToast, onOpenChat }) {
+function ProfileScreen({ role, currentUser, onLogout, showToast, onOpenSupport }) {
   const [open, setOpen] = useState(null); // which panel is expanded
   const [myReviews, setMyReviews] = useState(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -1621,12 +1731,12 @@ function ProfileScreen({ role, currentUser, onLogout, showToast, onOpenChat }) {
           </MenuItem>
         )}
 
-        {/* Help & Support → opens AI chat */}
+        {/* Help & Support */}
         <MenuItem
           id="help"
           label="Help & Support"
           icon={MessageCircle}
-          onClick={() => onOpenChat?.()}
+          onClick={() => onOpenSupport?.()}
         />
 
         {/* About ChukaNest */}
@@ -2072,6 +2182,115 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   );
 }
 
+function SupportAdminPanel({ settings, onSaved, showToast }) {
+  const [form, setForm] = useState(() => ({
+    supportPhone: settings.supportPhone || "",
+    whatsappNumber: settings.whatsappNumber || "",
+    email: settings.email || "",
+    officeHours: settings.officeHours || "",
+    faqs: settings.faqs?.length ? settings.faqs.map((faq) => ({ question: faq.question, answer: faq.answer })) : [{ question: "", answer: "" }],
+  }));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setForm({
+      supportPhone: settings.supportPhone || "",
+      whatsappNumber: settings.whatsappNumber || "",
+      email: settings.email || "",
+      officeHours: settings.officeHours || "",
+      faqs: settings.faqs?.length ? settings.faqs.map((faq) => ({ question: faq.question, answer: faq.answer })) : [{ question: "", answer: "" }],
+    });
+  }, [settings]);
+
+  const setField = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const updateFaq = (index, key, value) => setForm((current) => ({
+    ...current,
+    faqs: current.faqs.map((faq, faqIndex) => faqIndex === index ? { ...faq, [key]: value } : faq),
+  }));
+  const addFaq = () => setForm((current) => ({ ...current, faqs: [...current.faqs, { question: "", answer: "" }] }));
+  const removeFaq = (index) => setForm((current) => ({
+    ...current,
+    faqs: current.faqs.length > 1 ? current.faqs.filter((_, faqIndex) => faqIndex !== index) : [{ question: "", answer: "" }],
+  }));
+
+  const save = async () => {
+    if (!form.supportPhone.trim() || !form.whatsappNumber.trim() || !form.email.trim()) {
+      showToast("Phone, WhatsApp and email are required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const saved = await api.updateSupport({
+        ...form,
+        faqs: form.faqs.filter((faq) => faq.question.trim() && faq.answer.trim()),
+      });
+      onSaved(normalizeSupportSettings(saved));
+      showToast("Support details updated ✓");
+    } catch (err) {
+      showToast(err.message || "Failed to update support details");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputStyle = { ...fBody, background: C.bg, border: `1px solid ${C.line}`, borderRadius: 14, padding: "10px 14px", fontSize: 13, color: C.ink, width: "100%", outline: "none" };
+  const labelStyle = { ...fBody, color: C.inkSoft, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" };
+
+  return (
+    <div className="px-4 py-4 space-y-4">
+      <div className="rounded-2xl p-4" style={{ background: C.mint, border: `1px solid ${C.primary}22` }}>
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: C.primary }}><MessageCircle size={17} color="#fff" /></div>
+          <div>
+            <div className="text-[14px] font-bold" style={{ ...fDisplay, color: C.primaryDark }}>Support page settings</div>
+            <div className="mt-1 text-[12px] leading-relaxed" style={{ ...fBody, color: C.inkSoft }}>These details are shown to students on the Help & Support page. Keep the contact numbers current.</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+        <div className="text-[13px] font-bold" style={{ ...fDisplay, color: C.ink }}>Contact details</div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            ["supportPhone", "Support phone", "e.g. +254 700 000 000", "tel"],
+            ["whatsappNumber", "WhatsApp number", "e.g. +254 700 000 000", "tel"],
+            ["email", "Support email", "support@chukanest.co.ke", "email"],
+            ["officeHours", "Office hours", "Mon–Fri, 8:00 AM–5:00 PM", "text"],
+          ].map(([key, label, placeholder, type]) => (
+            <label key={key}>
+              <div className="mb-1.5" style={labelStyle}>{label}</div>
+              <input type={type} style={inputStyle} value={form[key]} onChange={(e) => setField(key, e.target.value)} placeholder={placeholder} />
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="text-[13px] font-bold" style={{ ...fDisplay, color: C.ink }}>Frequently asked questions</div>
+            <div className="mt-0.5 text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Edit the answers students see on the Support page.</div>
+          </div>
+          <button onClick={addFaq} className="flex shrink-0 items-center gap-1 rounded-xl px-2.5 py-2 text-[11px] font-semibold" style={{ ...fBody, background: C.mint, color: C.primaryDark }}><Plus size={13} /> Add FAQ</button>
+        </div>
+        <div className="space-y-3">
+          {form.faqs.map((faq, index) => (
+            <div key={index} className="rounded-2xl p-3 space-y-2" style={{ background: C.bg, border: `1px solid ${C.line}` }}>
+              <div className="flex items-center gap-2">
+                <input style={{ ...inputStyle, flex: 1 }} value={faq.question} onChange={(e) => updateFaq(index, "question", e.target.value)} placeholder="Question" />
+                <button onClick={() => removeFaq(index)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: C.dangerSoft }} aria-label="Remove FAQ"><Trash2 size={15} color={C.danger} /></button>
+              </div>
+              <textarea style={{ ...inputStyle, resize: "vertical", minHeight: 68 }} value={faq.answer} onChange={(e) => updateFaq(index, "answer", e.target.value)} placeholder="Answer" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <PrimaryButton full onClick={save} disabled={saving}>{saving ? "Saving support details…" : "Save support details"}</PrimaryButton>
+    </div>
+  );
+}
+
 /* ---------------------------------- ADMIN SCREEN ---------------------------------- */
 
 function AdminScreen({ showToast, onHostelSaved }) {
@@ -2080,22 +2299,25 @@ function AdminScreen({ showToast, onHostelSaved }) {
   const [pendingVerifications, setPendingVerifications] = useState([]);
   const [flagged, setFlagged] = useState([]);
   const [users, setUsers] = useState([]);
+  const [supportSettings, setSupportSettings] = useState(FALLBACK_SUPPORT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [hostelModal, setHostelModal] = useState(null); // null | { hostel: null } | { hostel: <obj> }
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [active, pending, flaggedRevs, userList] = await Promise.all([
+        const [active, pending, flaggedRevs, userList, support] = await Promise.all([
           api.getHostels(),
           api.getHostels("pending"),
           api.getFlaggedReviews(),
           api.getUsers(),
+          api.getSupport(),
         ]);
         setListings(active);
         setPendingVerifications(pending);
         setFlagged(flaggedRevs);
         setUsers(userList);
+        setSupportSettings(normalizeSupportSettings(support));
       } catch (err) {
         showToast("Failed to load admin data");
       } finally {
@@ -2122,6 +2344,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
     { id: "users",         label: "Users",     icon: Users },
     { id: "verifications", label: "Verify",    icon: Clock, badge: pendingVerifications.length },
     { id: "flagged",       label: "Flagged",   icon: Flag, badge: flagged.length },
+    { id: "support",       label: "Support",   icon: MessageCircle },
   ];
 
   if (loading) {
@@ -2450,6 +2673,15 @@ function AdminScreen({ showToast, onHostelSaved }) {
               </div>
             ))}
           </div>
+        )}
+
+        {/* ── SUPPORT SETTINGS ── */}
+        {activeTab === "support" && (
+          <SupportAdminPanel
+            settings={supportSettings}
+            onSaved={setSupportSettings}
+            showToast={showToast}
+          />
         )}
 
         {/* ── FLAGGED REVIEWS ── */}
@@ -3003,7 +3235,8 @@ export default function App() {
             {tab === "favs" && <FavouritesScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} />}
             {tab === "ai" && <AiScreen role={role} />}
             {tab === "admin" && role === "admin" && <AdminScreen showToast={showToast} onHostelSaved={handleAdminHostelSaved} />}
-            {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} onOpenChat={() => setTab("ai")} />}
+            {tab === "support" && <SupportScreen showToast={showToast} onBack={() => setTab("profile")} />}
+            {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} onOpenSupport={() => setTab("support")} />}
           </div>
         )}
       </div>

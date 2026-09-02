@@ -11,6 +11,7 @@ import { flaggedRouter } from "./routes/reviews.js";
 import userRoutes from "./routes/users.js";
 import aiRoutes from "./routes/ai.js";
 import uploadRoutes from "./routes/upload.js";
+import supportRoutes from "./routes/support.js";
 
 const app = express();
 app.use(cors());
@@ -30,6 +31,7 @@ app.use("/api/reviews", flaggedRouter);
 app.use("/api/users", userRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/support", supportRoutes);
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
 app.use(express.static(clientDist));

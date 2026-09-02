@@ -52,6 +52,10 @@ export const api = {
   aiSummarize: (hostelId) => req("POST", `/ai/summarize/${hostelId}`),
   aiRecommend: (data) => req("POST", "/ai/recommend", data),
 
+  // Support
+  getSupport: () => req("GET", "/support"),
+  updateSupport: (data) => req("PATCH", "/support", data),
+
   // Upload
   uploadImages: async (files) => {
     const fd = new FormData();
