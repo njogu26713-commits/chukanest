@@ -337,9 +337,9 @@ function AvailabilityBadge({ rooms, compact = false }) {
       }}
     >
       {isFull ? (
-        <><AlertTriangle size={12} /> 0 full!</>
+        <><AlertTriangle size={12} /> Full!</>
       ) : (
-        <><span style={{ width: 7, height: 7, borderRadius: "50%", background: C.primary, display: "inline-block" }} /> {count} room{count === 1 ? "" : "s"}{compact ? " available" : " left"}</>
+        <><span style={{ width: 7, height: 7, borderRadius: "50%", background: C.primary, display: "inline-block" }} /> {count} room{count === 1 ? "" : "s"}</>
       )}
     </div>
   );
@@ -1944,7 +1944,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
               <option value="full">Full — no vacancies</option>
             </select>
             <div className="mt-1 text-[10px]" style={{ ...fBody, color: form.availability === "full" ? C.danger : C.primaryDark }}>
-              {form.availability === "full" ? "This listing will show a red 0 full! label." : "This listing will show a green dot with the room count."}
+              {form.availability === "full" ? "This listing will show a red Full! label." : "This listing will show a green dot with the room count."}
             </div>
           </div>
 
