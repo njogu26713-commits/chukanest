@@ -6,6 +6,7 @@ const hostelSchema = new mongoose.Schema(
     location: { type: String, required: true, trim: true },
     roomType: { type: String, enum: ["Bedsitter", "Single", "Shared", "Studio", "1 Bedroom", "2 Bedroom"], required: true },
     price: { type: Number, required: true },
+    billingPeriod: { type: String, enum: ["month", "semester"], default: "month" },
     distance: { type: Number, required: true },
     rating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },

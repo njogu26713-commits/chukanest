@@ -53,6 +53,9 @@ const isVideo = (src = "") =>
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23E4E9E3'/%3E%3Crect x='160' y='110' width='80' height='60' rx='6' fill='%23C4CEBC'/%3E%3Ccircle cx='175' cy='125' r='8' fill='%23A8B8A0'/%3E%3Cpolygon points='155,170 200,130 230,155 260,135 295,170' fill='%23A8B8A0'/%3E%3C/svg%3E";
 
+const billingPeriodLabel = (period = "month") => period === "semester" ? "semester" : "month";
+const billingPeriodPreposition = (period = "month") => period === "semester" ? "per semester" : "per month";
+
 function MediaItem({ src, alt = "", style, className, controls = false }) {
   if (isVideo(src)) {
     const onLoaded = (e) => { try { e.target.currentTime = 0.001; } catch {} };
@@ -457,7 +460,7 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
         </div>
         <div className="mt-2.5 flex items-center justify-between">
           <div style={{ ...fMono, color: C.primaryDark }} className="text-[16px] font-bold">
-            KES {hostel.price.toLocaleString()}<span className="text-[11px] font-medium" style={{ color: C.inkSoft }}>/mo</span>
+            KES {hostel.price.toLocaleString()}<span className="text-[11px] font-medium" style={{ color: C.inkSoft }}>/{billingPeriodLabel(hostel.billingPeriod)}</span>
           </div>
           <Badge>{hostel.roomType}</Badge>
         </div>
@@ -992,7 +995,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
                   <img src={h.images?.[0]} alt={h.name} className="w-full object-cover" style={{ height: 110 }} />
                   <div className="p-2.5">
                     <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{h.name}</div>
-                    <div className="text-[11px] font-bold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {h.price?.toLocaleString()}/mo</div>
+                    <div className="text-[11px] font-bold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {h.price?.toLocaleString()}/{billingPeriodLabel(h.billingPeriod)}</div>
                     <div className="mt-1.5 rounded-lg px-2 py-1" style={{ background: C.mint }}>
                       <div className="flex items-start gap-1">
                         <Sparkles size={9} color={C.primary} className="mt-0.5 shrink-0" />
@@ -1190,7 +1193,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
             </div>
             <div className="text-right shrink-0">
               <div className="text-[22px] font-bold" style={{ ...fMono, color: C.primaryDark }}>KES {hostel.price.toLocaleString()}</div>
-              <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>per month</div>
+              <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>{billingPeriodPreposition(hostel.billingPeriod)}</div>
             </div>
           </div>
 
@@ -1458,7 +1461,7 @@ function MapScreen({ hostels, onOpen }) {
             <div className="flex-1 min-w-0">
               <div className="text-[15px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{selectedHostel.name}</div>
               <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{selectedHostel.distance} km · {selectedHostel.roomType}</div>
-              <div className="text-[14px] font-bold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {selectedHostel.price.toLocaleString()}/mo</div>
+                <div className="text-[14px] font-bold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {selectedHostel.price.toLocaleString()}/{billingPeriodLabel(selectedHostel.billingPeriod)}</div>
             </div>
             <div className="flex flex-col gap-1.5 shrink-0">
               <PrimaryButton onClick={() => onOpen(selectedHostel.id)}>View</PrimaryButton>
@@ -1478,7 +1481,7 @@ function MapScreen({ hostels, onOpen }) {
               >
                 <img src={h.images[0]} alt="" className="w-full rounded-xl object-cover mb-2" style={{ aspectRatio: "1/1" }} />
                 <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{h.name}</div>
-                <div className="text-[12px] font-bold" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo</div>
+                <div className="text-[12px] font-bold" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/{billingPeriodLabel(h.billingPeriod)}</div>
               </button>
             ))}
           </div>
@@ -1802,7 +1805,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   const isEdit = !!hostel;
   const empty = {
     name: "", location: "", contactRole: "Landlord", phone: "", roomType: "Bedsitter",
-    price: "", distance: "", availableRooms: "", availability: "available", description: "",
+    price: "", billingPeriod: "month", distance: "", availableRooms: "", availability: "available", description: "",
     amenities: [], status: "active", latlng: [],
   };
 
@@ -1813,6 +1816,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
     phone: h.phone ?? "",
     roomType: h.roomType ?? "Bedsitter",
     price: h.price ?? "",
+    billingPeriod: h.billingPeriod === "semester" ? "semester" : "month",
     distance: h.distance ?? "",
     availableRooms: h.availableRooms ?? "",
     availability: Number(h.availableRooms) > 0 ? "available" : "full",
@@ -1928,6 +1932,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
       const payload = {
         ...form,
         price: Number(form.price),
+        billingPeriod: form.billingPeriod === "semester" ? "semester" : "month",
         distance,
         availableRooms: form.availability === "full" ? 0 : Number(form.availableRooms),
         images: imageUrls,
@@ -2011,11 +2016,18 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
             </select>
           </div>
 
-          {/* Price + Distance + Rooms */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {/* Price + Billing period + Distance + Rooms */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <div>
               <div className="mb-1.5" style={labelStyle}>Price (KES) *</div>
               <input style={inputStyle} type="number" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="4500" />
+            </div>
+            <div>
+              <div className="mb-1.5" style={labelStyle}>Billing period</div>
+              <select style={selectStyle} value={form.billingPeriod} onChange={(e) => set("billingPeriod", e.target.value)}>
+                <option value="month">Per month</option>
+                <option value="semester">Per semester</option>
+              </select>
             </div>
             <div>
               <div className="mb-1.5" style={labelStyle}>Distance (km) {getDistanceFromCampus(form.latlng) !== null ? "(auto)" : "*"}</div>
@@ -2507,7 +2519,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
                     </div>
                     <div className="text-[12px] truncate" style={{ ...fBody, color: C.inkSoft }}>{h.location || "Location not provided"} · {h.contactRole || "Landlord"} · {h.roomType}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <span className="text-[12px] font-semibold" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/mo</span>
+                      <span className="text-[12px] font-semibold" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/{billingPeriodLabel(h.billingPeriod)}</span>
                       <AvailabilityBadge rooms={h.availableRooms} compact />
                     </div>
                   </div>
@@ -2628,7 +2640,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
                   <div className="grid grid-cols-1 gap-2 mb-4 sm:grid-cols-3">
                     {[
                       { label: "Rooms", value: v.availableRooms },
-                      { label: "Price/mo", value: `KES ${v.price?.toLocaleString()}` },
+                      { label: `Price/${billingPeriodLabel(v.billingPeriod)}`, value: `KES ${v.price?.toLocaleString()}` },
                       { label: "Distance", value: `${v.distance} km` },
                     ].map(({ label, value }) => (
                       <div key={label} className="rounded-xl p-2 text-center" style={{ background: C.bg }}>
