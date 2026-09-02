@@ -1566,10 +1566,13 @@ function formatWhatsAppNumber(value) {
   return digits.startsWith("0") ? `254${digits.slice(1)}` : digits;
 }
 
-function SupportScreen({ showToast, onBack }) {
+function SupportScreen({ showToast, onBack, currentUser }) {
   const [settings, setSettings] = useState(FALLBACK_SUPPORT_SETTINGS);
   const [openFaq, setOpenFaq] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [contact, setContact] = useState({ name: currentUser?.name || "", email: currentUser?.email || "", topic: "", message: "" });
+  const [contactSending, setContactSending] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
 
   useEffect(() => {
     api.getSupport()
@@ -1579,6 +1582,33 @@ function SupportScreen({ showToast, onBack }) {
   }, []);
 
   const whatsappLink = `https://wa.me/${formatWhatsAppNumber(settings.whatsappNumber)}`;
+  const updateContact = (key, value) => setContact((current) => ({ ...current, [key]: value }));
+  const submitContact = async (event) => {
+    event.preventDefault();
+    setContactSending(true);
+    try {
+      await api.submitContact(contact);
+      setContactSent(true);
+      setContact((current) => ({ ...current, topic: "", message: "" }));
+      showToast("Message sent successfully ✓");
+    } catch (err) {
+      showToast(err.message || "Could not send your message");
+    } finally {
+      setContactSending(false);
+    }
+  };
+  const shareSupport = async () => {
+    const supportUrl = new URL(window.location.href);
+    supportUrl.searchParams.set("support", "1");
+    const shareData = { title: "ChukaNest Help & Support", text: "Contact ChukaNest support", url: supportUrl.toString() };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else await navigator.clipboard.writeText(supportUrl.toString());
+      showToast(navigator.share ? "Support page shared ✓" : "Support link copied ✓");
+    } catch (err) {
+      if (err?.name !== "AbortError") showToast("Could not share the support link");
+    }
+  };
 
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
@@ -1621,6 +1651,46 @@ function SupportScreen({ showToast, onBack }) {
             <div className="mt-2 px-1 text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Office hours: {settings.officeHours}</div>
           </section>
 
+          <section className="rounded-2xl p-4 md:p-5" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[15px] font-bold" style={{ ...fDisplay, color: C.ink }}>Send us a message</div>
+                <div className="mt-1 text-[12px]" style={{ ...fBody, color: C.inkSoft }}>We’ll get back to you as soon as possible.</div>
+              </div>
+              <button type="button" onClick={shareSupport} className="flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-semibold" style={{ ...fBody, background: C.mint, color: C.primaryDark }}>
+                <Navigation size={14} /> Share
+              </button>
+            </div>
+            {contactSent ? (
+              <div className="mt-4 rounded-xl p-3 text-[13px]" style={{ ...fBody, background: C.mint, color: C.primaryDark }}>
+                Thanks for contacting us. Your message has been received.
+                <button type="button" onClick={() => setContactSent(false)} className="ml-2 font-bold underline">Send another</button>
+              </div>
+            ) : (
+              <form onSubmit={submitContact} className="mt-4 space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[['name', 'Name', 'Your name', 'text'], ['email', 'Email', 'you@example.com', 'email']].map(([key, label, placeholder, type]) => (
+                    <label key={key} className="block">
+                      <span className="mb-1.5 block text-[12px] font-semibold" style={{ ...fBody, color: C.ink }}>{label}</span>
+                      <input required type={type} value={contact[key]} onChange={(e) => updateContact(key, e.target.value)} placeholder={placeholder} className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none" style={{ ...fBody, background: C.bg, border: `1px solid ${C.line}`, color: C.ink }} />
+                    </label>
+                  ))}
+                </div>
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold" style={{ ...fBody, color: C.ink }}>What is it about?</span>
+                  <select required value={contact.topic} onChange={(e) => updateContact("topic", e.target.value)} className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none" style={{ ...fBody, background: C.bg, border: `1px solid ${C.line}`, color: C.ink }}>
+                    <option value="">Choose a topic</option>
+                    {['General question', 'Hostel listing', 'Review or report', 'Account help', 'Safety concern', 'Other'].map((topic) => <option key={topic} value={topic}>{topic}</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold" style={{ ...fBody, color: C.ink }}>Message</span>
+                  <textarea required minLength={10} maxLength={3000} rows={4} value={contact.message} onChange={(e) => updateContact("message", e.target.value)} placeholder="Tell us how we can help…" className="w-full resize-y rounded-xl px-3 py-2.5 text-[13px] outline-none" style={{ ...fBody, background: C.bg, border: `1px solid ${C.line}`, color: C.ink }} />
+                </label>
+                <PrimaryButton full type="submit" disabled={contactSending}>{contactSending ? "Sending…" : "Send message"}</PrimaryButton>
+              </form>
+            )}
+          </section>
           <section>
             <div className="mb-2 px-1 text-[12px] font-bold uppercase tracking-[0.08em]" style={{ ...fBody, color: C.inkSoft }}>Frequently asked questions</div>
             <div className="overflow-hidden rounded-2xl" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
@@ -3129,7 +3199,7 @@ function AiScreen({ role }) {
 export default function App() {
   const [role, setRole] = useState(() => { const s = loadAuth(); return s?.user?.role ?? null; });
   const [currentUser, setCurrentUser] = useState(() => { const s = loadAuth(); return s?.user ?? null; });
-  const [tab, setTab] = useState("home");
+  const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get("support") === "1" ? "support" : "home");
   const [openHostelId, setOpenHostelId] = useState(null);
   const [hostels, setHostels] = useState([]);
   const [favs, setFavs] = useState(new Set());
@@ -3304,7 +3374,7 @@ export default function App() {
             {tab === "favs" && <FavouritesScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} />}
             {tab === "ai" && <AiScreen role={role} />}
             {tab === "admin" && role === "admin" && <AdminScreen showToast={showToast} onHostelSaved={handleAdminHostelSaved} />}
-            {tab === "support" && <SupportScreen showToast={showToast} onBack={() => setTab("profile")} />}
+            {tab === "support" && <SupportScreen showToast={showToast} onBack={() => setTab("profile")} currentUser={currentUser} />}
             {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} onOpenSupport={() => setTab("support")} />}
           </div>
         )}

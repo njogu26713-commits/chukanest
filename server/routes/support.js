@@ -1,5 +1,6 @@
 import { Router } from "express";
 import SupportSettings, { DEFAULT_SUPPORT_SETTINGS } from "../models/SupportSettings.js";
+import ContactMessage from "../models/ContactMessage.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
@@ -19,6 +20,25 @@ router.get("/", async (_req, res) => {
     res.json(await getOrCreateSettings());
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/support/contact — public contact form submission
+router.post("/contact", async (req, res) => {
+  try {
+    const { name, email, topic, message } = req.body || {};
+    const allowedTopics = ["General question", "Hostel listing", "Review or report", "Account help", "Safety concern", "Other"];
+    if (!String(name || "").trim() || !String(email || "").trim() || !String(topic || "").trim() || !String(message || "").trim()) {
+      return res.status(400).json({ error: "Please complete all contact form fields" });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+      return res.status(400).json({ error: "Please enter a valid email address" });
+    }
+    if (!allowedTopics.includes(topic)) return res.status(400).json({ error: "Please choose a valid topic" });
+    const submission = await ContactMessage.create({ name, email, topic, message });
+    res.status(201).json({ ok: true, id: submission._id });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
