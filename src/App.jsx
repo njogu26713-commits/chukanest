@@ -1091,7 +1091,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
       {/* Image carousel */}
       <div
         className="relative w-full overflow-hidden"
-        style={{ aspectRatio: "1 / 1", flexShrink: 0 }}
+        style={{ height: "clamp(220px, 42vh, 480px)", flexShrink: 0 }}
         onTouchStart={onDetailTouchStart}
         onTouchEnd={onDetailTouchEnd}
       >
