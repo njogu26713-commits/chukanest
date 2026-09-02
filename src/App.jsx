@@ -53,8 +53,31 @@ const isVideo = (src = "") =>
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23E4E9E3'/%3E%3Crect x='160' y='110' width='80' height='60' rx='6' fill='%23C4CEBC'/%3E%3Ccircle cx='175' cy='125' r='8' fill='%23A8B8A0'/%3E%3Cpolygon points='155,170 200,130 230,155 260,135 295,170' fill='%23A8B8A0'/%3E%3C/svg%3E";
 
+const SEMESTER_MONTHS = 4;
 const billingPeriodLabel = (period = "month") => period === "semester" ? "semester" : "month";
 const billingPeriodPreposition = (period = "month") => period === "semester" ? "per semester" : "per month";
+const monthlyEquivalent = (price, period = "month") => {
+  const amount = Number(price);
+  if (!Number.isFinite(amount)) return 0;
+  return period === "semester" ? Math.round(amount / SEMESTER_MONTHS) : amount;
+};
+
+function PriceSummary({ price, billingPeriod = "month", mainClassName = "", mainStyle = {}, subClassName = "", subStyle = {} }) {
+  const amount = Number(price) || 0;
+  const period = billingPeriodLabel(billingPeriod);
+  return (
+    <div>
+      <div className={mainClassName} style={mainStyle}>
+        KES {amount.toLocaleString()}<span className="text-[11px] font-medium" style={{ color: C.inkSoft }}>/{period}</span>
+      </div>
+      {period === "semester" && (
+        <div className={subClassName} style={{ ...fBody, color: C.inkSoft, fontSize: 10, marginTop: 2, ...subStyle }}>
+          ≈ KES {monthlyEquivalent(amount, billingPeriod).toLocaleString()}/month <span style={{ opacity: 0.8 }}>(4 months)</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MediaItem({ src, alt = "", style, className, controls = false }) {
   if (isVideo(src)) {
@@ -459,9 +482,12 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
           <Navigation size={12} className="shrink-0" /> {hostel.distance} km from Chuka University
         </div>
         <div className="mt-2.5 flex items-center justify-between">
-          <div style={{ ...fMono, color: C.primaryDark }} className="text-[16px] font-bold">
-            KES {hostel.price.toLocaleString()}<span className="text-[11px] font-medium" style={{ color: C.inkSoft }}>/{billingPeriodLabel(hostel.billingPeriod)}</span>
-          </div>
+          <PriceSummary
+            price={hostel.price}
+            billingPeriod={hostel.billingPeriod}
+            mainClassName="text-[16px] font-bold"
+            mainStyle={{ ...fMono, color: C.primaryDark }}
+          />
           <Badge>{hostel.roomType}</Badge>
         </div>
       </div>
@@ -995,7 +1021,12 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
                   <img src={h.images?.[0]} alt={h.name} className="w-full object-cover" style={{ height: 110 }} />
                   <div className="p-2.5">
                     <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{h.name}</div>
-                    <div className="text-[11px] font-bold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {h.price?.toLocaleString()}/{billingPeriodLabel(h.billingPeriod)}</div>
+                    <PriceSummary
+                      price={h.price}
+                      billingPeriod={h.billingPeriod}
+                      mainClassName="text-[11px] font-bold mt-0.5"
+                      mainStyle={{ ...fMono, color: C.primaryDark }}
+                    />
                     <div className="mt-1.5 rounded-lg px-2 py-1" style={{ background: C.mint }}>
                       <div className="flex items-start gap-1">
                         <Sparkles size={9} color={C.primary} className="mt-0.5 shrink-0" />
@@ -1192,8 +1223,13 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
               </div>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-[22px] font-bold" style={{ ...fMono, color: C.primaryDark }}>KES {hostel.price.toLocaleString()}</div>
-              <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>{billingPeriodPreposition(hostel.billingPeriod)}</div>
+              <PriceSummary
+                price={hostel.price}
+                billingPeriod={hostel.billingPeriod}
+                mainClassName="text-[22px] font-bold"
+                mainStyle={{ ...fMono, color: C.primaryDark }}
+                subClassName="text-[11px]"
+              />
             </div>
           </div>
 
@@ -1461,7 +1497,12 @@ function MapScreen({ hostels, onOpen }) {
             <div className="flex-1 min-w-0">
               <div className="text-[15px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{selectedHostel.name}</div>
               <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{selectedHostel.distance} km · {selectedHostel.roomType}</div>
-                <div className="text-[14px] font-bold mt-0.5" style={{ ...fMono, color: C.primaryDark }}>KES {selectedHostel.price.toLocaleString()}/{billingPeriodLabel(selectedHostel.billingPeriod)}</div>
+                <PriceSummary
+                  price={selectedHostel.price}
+                  billingPeriod={selectedHostel.billingPeriod}
+                  mainClassName="text-[14px] font-bold mt-0.5"
+                  mainStyle={{ ...fMono, color: C.primaryDark }}
+                />
             </div>
             <div className="flex flex-col gap-1.5 shrink-0">
               <PrimaryButton onClick={() => onOpen(selectedHostel.id)}>View</PrimaryButton>
@@ -1481,7 +1522,12 @@ function MapScreen({ hostels, onOpen }) {
               >
                 <img src={h.images[0]} alt="" className="w-full rounded-xl object-cover mb-2" style={{ aspectRatio: "1/1" }} />
                 <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{h.name}</div>
-                <div className="text-[12px] font-bold" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/{billingPeriodLabel(h.billingPeriod)}</div>
+                <PriceSummary
+                  price={h.price}
+                  billingPeriod={h.billingPeriod}
+                  mainClassName="text-[12px] font-bold"
+                  mainStyle={{ ...fMono, color: C.primaryDark }}
+                />
               </button>
             ))}
           </div>
@@ -2028,6 +2074,11 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
                 <option value="month">Per month</option>
                 <option value="semester">Per semester</option>
               </select>
+              {form.billingPeriod === "semester" && Number(form.price) > 0 && (
+                <div className="mt-1 text-[10px] leading-snug" style={{ ...fBody, color: C.primaryDark }}>
+                  KES {monthlyEquivalent(form.price, "semester").toLocaleString()}/month equivalent · 4 months
+                </div>
+              )}
             </div>
             <div>
               <div className="mb-1.5" style={labelStyle}>Distance (km) {getDistanceFromCampus(form.latlng) !== null ? "(auto)" : "*"}</div>
@@ -2519,7 +2570,12 @@ function AdminScreen({ showToast, onHostelSaved }) {
                     </div>
                     <div className="text-[12px] truncate" style={{ ...fBody, color: C.inkSoft }}>{h.location || "Location not provided"} · {h.contactRole || "Landlord"} · {h.roomType}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <span className="text-[12px] font-semibold" style={{ ...fMono, color: C.primaryDark }}>KES {h.price.toLocaleString()}/{billingPeriodLabel(h.billingPeriod)}</span>
+                      <PriceSummary
+                        price={h.price}
+                        billingPeriod={h.billingPeriod}
+                        mainClassName="text-[12px] font-semibold"
+                        mainStyle={{ ...fMono, color: C.primaryDark }}
+                      />
                       <AvailabilityBadge rooms={h.availableRooms} compact />
                     </div>
                   </div>
@@ -2641,6 +2697,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
                     {[
                       { label: "Rooms", value: v.availableRooms },
                       { label: `Price/${billingPeriodLabel(v.billingPeriod)}`, value: `KES ${v.price?.toLocaleString()}` },
+                      ...(v.billingPeriod === "semester" ? [{ label: "Monthly equivalent", value: `KES ${monthlyEquivalent(v.price, "semester").toLocaleString()}` }] : []),
                       { label: "Distance", value: `${v.distance} km` },
                     ].map(({ label, value }) => (
                       <div key={label} className="rounded-xl p-2 text-center" style={{ background: C.bg }}>
