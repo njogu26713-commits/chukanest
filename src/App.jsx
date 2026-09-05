@@ -1110,6 +1110,11 @@ function PremiumUpgradeCard({ showToast, onActivated }) {
     try {
       const result = await api.startPremiumPayment(phone);
       showToast(result.message || "Check your phone for the M-Pesa prompt");
+      if (result.temporary) {
+        setLoading(false);
+        onActivated({ active: true, premiumUntil: result.expiresAt, phone });
+        return;
+      }
       setWaiting(true);
       let attempts = 0;
       const poll = async () => {

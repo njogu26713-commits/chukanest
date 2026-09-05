@@ -61,6 +61,7 @@ The first server start seeds the MongoDB database when the `hostels` collection 
 | `MPESA_PASSKEY` | Daraja Lipa na M-Pesa passkey |
 | `MPESA_CALLBACK_URL` | Public HTTPS URL ending in `/api/payments/callback` |
 | `MPESA_ENV` | `sandbox` (default) or `production` |
+| `MPESA_TEMPORARY_MODE` | Temporary testing mode; defaults to enabled when Daraja is not configured. Set to `false` to require live M-Pesa. |
 
 ## Project structure
 

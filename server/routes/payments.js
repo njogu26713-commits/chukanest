@@ -18,6 +18,10 @@ function darajaConfigured() {
   return process.env.MPESA_CONSUMER_KEY && process.env.MPESA_CONSUMER_SECRET && process.env.MPESA_SHORTCODE && process.env.MPESA_PASSKEY && process.env.MPESA_CALLBACK_URL;
 }
 
+function temporaryPaymentMode() {
+  return process.env.MPESA_TEMPORARY_MODE !== "false";
+}
+
 async function darajaToken() {
   const auth = Buffer.from(`${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`).toString("base64");
   const response = await fetch(`${process.env.MPESA_ENV === "production" ? "https://api.safaricom.co.ke" : "https://sandbox.safaricom.co.ke"}/oauth/v1/generate?grant_type=client_credentials`, {
@@ -46,6 +50,14 @@ router.post("/stk", requireAuth, async (req, res) => {
   try {
     const phone = normalizePhone(req.body.phone);
     if (!/^254(7|1)\d{8}$/.test(phone)) return res.status(400).json({ error: "Enter a valid Safaricom number, e.g. 0712345678" });
+    if (!darajaConfigured() && temporaryPaymentMode()) {
+      const user = await User.findById(req.user.id);
+      const start = user?.premiumUntil && new Date(user.premiumUntil) > new Date() ? new Date(user.premiumUntil) : new Date();
+      const expiresAt = new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const payment = await Payment.create({ user: req.user.id, phone, amount: PREMIUM_PRICE, status: "completed", paidAt: new Date(), expiresAt, resultDescription: "Temporary test payment — no live M-Pesa charge" });
+      await User.findByIdAndUpdate(req.user.id, { phone, premiumUntil: expiresAt });
+      return res.json({ ok: true, temporary: true, paymentId: payment.id, expiresAt, message: "Temporary payment recorded. Premium access is active for 30 days." });
+    }
     if (!darajaConfigured()) return res.status(503).json({ error: "M-Pesa payments are not configured yet. Add the Daraja credentials and callback URL first." });
 
     const token = await darajaToken();
