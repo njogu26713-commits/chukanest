@@ -849,6 +849,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
   const [typeFilter, setTypeFilter] = useState("All");
   const [sortBy, setSortBy] = useState("rating");
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [premiumCount, setPremiumCount] = useState(0);
 
   // AI Smart Search
   const [aiMode, setAiMode] = useState(false);
@@ -871,6 +872,10 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
       .catch(() => {})
       .finally(() => setRecsLoading(false));
   }, [currentUser]);
+
+  useEffect(() => {
+    api.getPremiumAvailability().then((data) => setPremiumCount(Number(data.count) || 0)).catch(() => {});
+  }, []);
 
   const handleAiSearch = async () => {
     if (!search.trim()) return;
@@ -901,7 +906,8 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
   };
 
   const freeHostels = useMemo(() => hostels.filter((h) => !h.isLocked), [hostels]);
-  const lockedPremiumCount = hostels.filter((h) => h.isLocked && h.accessLevel === "premium").length;
+  const hasPremium = !!(currentUser?.premiumUntil && new Date(currentUser.premiumUntil) > new Date());
+  const lockedPremiumCount = hasPremium ? 0 : premiumCount;
 
   const filtered = useMemo(() => {
     return freeHostels

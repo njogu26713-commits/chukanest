@@ -1,11 +1,15 @@
 import { Router } from "express";
 import Hostel from "../models/Hostel.js";
+import User from "../models/User.js";
 import { requireAuth, requireAdmin, optionalAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-function hasPremiumAccess(req) {
-  return req.user?.role === "admin" || (req.user?.premiumUntil && new Date(req.user.premiumUntil) > new Date());
+async function hasPremiumAccess(req) {
+  if (req.user?.role === "admin") return true;
+  if (!req.user?.id) return false;
+  const user = await User.findById(req.user.id).select("premiumUntil");
+  return !!(user?.premiumUntil && new Date(user.premiumUntil) > new Date());
 }
 
 function present(hostel, unlocked) {
@@ -23,13 +27,24 @@ function present(hostel, unlocked) {
   return item;
 }
 
-// GET /api/hostels — active hostels; premium listings remain visible as locked catalogue entries.
+// GET /api/hostels — free listings for ordinary users; premium listings only after payment.
 router.get("/", optionalAuth, async (req, res) => {
   try {
     const { status } = req.query;
-    const filter = status ? { status } : { status: "active" };
+    const unlocked = await hasPremiumAccess(req);
+    const filter = status ? { status } : { status: "active", ...(unlocked ? {} : { accessLevel: "free" }) };
     const hostels = await Hostel.find(filter).sort({ rating: -1 });
-    res.json(hostels.map((hostel) => present(hostel, hasPremiumAccess(req))));
+    res.json(hostels.map((hostel) => present(hostel, unlocked)));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public count used only to show the upgrade prompt without exposing premium listings.
+router.get("/premium-availability", async (_req, res) => {
+  try {
+    const count = await Hostel.countDocuments({ status: "active", accessLevel: "premium" });
+    res.json({ count });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -40,7 +55,9 @@ router.get("/:id", optionalAuth, async (req, res) => {
   try {
     const hostel = await Hostel.findById(req.params.id);
     if (!hostel) return res.status(404).json({ error: "Not found" });
-    res.json(present(hostel, hasPremiumAccess(req)));
+    const unlocked = await hasPremiumAccess(req);
+    if (hostel.accessLevel === "premium" && !unlocked) return res.status(404).json({ error: "Not found" });
+    res.json(present(hostel, unlocked));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
