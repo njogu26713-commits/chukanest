@@ -844,10 +844,11 @@ function AuthScreen({ onAuthed, showToast }) {
 
 /* ---------------------------------- HOME SCREEN ---------------------------------- */
 
-function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser, favIds }) {
+function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser, favIds, onPremiumActivated }) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [sortBy, setSortBy] = useState("rating");
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   // AI Smart Search
   const [aiMode, setAiMode] = useState(false);
@@ -899,8 +900,11 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
     setSortBy("rating");
   };
 
+  const freeHostels = useMemo(() => hostels.filter((h) => !h.isLocked), [hostels]);
+  const lockedPremiumCount = hostels.filter((h) => h.isLocked && h.accessLevel === "premium").length;
+
   const filtered = useMemo(() => {
-    return hostels
+    return freeHostels
       .filter((h) => {
         // Regular text search (when not in AI mode or AI hasn't run yet)
         const q = aiFilters ? "" : search.toLowerCase();
@@ -920,7 +924,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
         if (sortBy === "distance") return a.distance - b.distance;
         return 0;
       });
-  }, [hostels, search, typeFilter, sortBy, aiFilters]);
+  }, [freeHostels, search, typeFilter, sortBy, aiFilters]);
 
   return (
     <div className="flex h-full flex-col" style={{ background: C.bg }}>
@@ -992,7 +996,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
 
       {/* Sort bar */}
       <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
-        <span className="text-[12px] font-medium" style={{ ...fBody, color: C.inkSoft }}>{filtered.length} listings · Sort:</span>
+        <span className="text-[12px] font-medium" style={{ ...fBody, color: C.inkSoft }}>{filtered.length} free listings · Sort:</span>
         {[["rating", "Top Rated"], ["price_asc", "Cheapest"], ["distance", "Nearest"]].map(([val, label]) => (
           <button
             key={val}
@@ -1062,6 +1066,19 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
             {filtered.map((h) => (
               <HostelCard key={h.id} hostel={h} isFav={favs.has(h.id)} onToggleFav={onToggleFav} onOpen={onOpen} />
             ))}
+          </div>
+        )}
+
+        {lockedPremiumCount > 0 && (
+          <div className="mt-5 rounded-3xl p-5 text-center" style={{ background: C.surface, border: `1px solid ${C.gold}55` }}>
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: C.goldSoft }}><Lock size={19} color={C.gold} /></div>
+            <div className="mt-3 text-[16px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>Want more houses?</div>
+            <div className="mt-1 text-[12px] leading-relaxed" style={{ ...fBody, color: C.inkSoft }}>{lockedPremiumCount} more premium {lockedPremiumCount === 1 ? "listing is" : "listings are"} available after unlocking.</div>
+            {!showUpgrade ? (
+              <PrimaryButton className="mx-auto mt-4" onClick={() => setShowUpgrade(true)} icon={Lock}>Unlock all premium listings</PrimaryButton>
+            ) : (
+              <div className="mt-4 text-left"><PremiumUpgradeCard showToast={showToast} onActivated={(status) => { setShowUpgrade(false); onPremiumActivated(status); }} /></div>
+            )}
           </div>
         )}
       </div>
@@ -3477,7 +3494,7 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <HomeScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} currentUser={currentUser} favIds={[...favs]} />
+                <HomeScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} currentUser={currentUser} favIds={[...favs]} onPremiumActivated={handlePremiumActivated} />
               )
             )}
             {tab === "map" && <MapScreen hostels={hostels} onOpen={(id) => setOpenHostelId(id)} />}
