@@ -1080,14 +1080,21 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
             <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: C.goldSoft }}><Lock size={19} color={C.gold} /></div>
             <div className="mt-3 text-[16px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>Want more houses?</div>
             <div className="mt-1 text-[12px] leading-relaxed" style={{ ...fBody, color: C.inkSoft }}>{lockedPremiumCount} more premium {lockedPremiumCount === 1 ? "listing is" : "listings are"} available after unlocking.</div>
-            {!showUpgrade ? (
-              <PrimaryButton className="mx-auto mt-4" onClick={() => setShowUpgrade(true)} icon={Lock}>Unlock all premium listings</PrimaryButton>
-            ) : (
-              <div className="mt-4 text-left"><PremiumUpgradeCard showToast={showToast} onActivated={(status) => { setShowUpgrade(false); onPremiumActivated(status); }} /></div>
-            )}
+            <PrimaryButton className="mx-auto mt-4" onClick={() => setShowUpgrade(true)} icon={Lock}>Unlock all premium listings</PrimaryButton>
           </div>
         )}
       </div>
+      {showUpgrade && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.48)" }} onClick={(e) => e.target === e.currentTarget && setShowUpgrade(false)}>
+          <div className="w-full max-w-lg rounded-3xl p-4" style={{ background: C.surface, boxShadow: "0 18px 60px rgba(0,0,0,0.25)" }}>
+            <div className="mb-2 flex items-center justify-between px-1">
+              <div className="text-[16px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>Unlock premium access</div>
+              <button onClick={() => setShowUpgrade(false)} className="rounded-xl p-2" style={{ background: C.mint }} aria-label="Close payment modal"><X size={17} color={C.primaryDark} /></button>
+            </div>
+            <PremiumUpgradeCard showToast={showToast} onActivated={(status) => { setShowUpgrade(false); onPremiumActivated(status); }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

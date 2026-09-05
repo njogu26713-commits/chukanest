@@ -33,8 +33,8 @@ router.get("/", optionalAuth, async (req, res) => {
     const unlocked = await hasPremiumAccess(req);
     const adminView = status && req.user?.role === "admin";
     const filter = status
-      ? { status, ...(adminView ? {} : { accessLevel: "free" }) }
-      : { status: "active", ...(unlocked ? {} : { accessLevel: "free" }) };
+      ? { status, ...(adminView ? {} : { accessLevel: { $ne: "premium" } }) }
+      : { status: "active", ...(unlocked ? {} : { accessLevel: { $ne: "premium" } }) };
     const hostels = await Hostel.find(filter).sort({ rating: -1 });
     res.json(hostels.map((hostel) => present(hostel, unlocked)));
   } catch (err) {
