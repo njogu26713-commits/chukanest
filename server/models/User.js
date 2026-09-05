@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema(
     provider: { type: String, enum: ["local", "google"], default: "local" },
     role: { type: String, enum: ["student", "admin"], default: "student" },
     bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Hostel" }],
+    premiumUntil: { type: Date, default: null },
+    phone: { type: String, default: "" },
     status: { type: String, enum: ["active", "flagged", "suspended"], default: "active" },
   },
   { timestamps: true }

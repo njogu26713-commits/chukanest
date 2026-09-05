@@ -15,7 +15,7 @@ function signToken(user) {
 }
 
 function userPayload(user) {
-  return { id: user._id, name: user.name, email: user.email, role: user.role, provider: user.provider };
+  return { id: user._id, name: user.name, email: user.email, role: user.role, provider: user.provider, premiumUntil: user.premiumUntil || null, phone: user.phone || "" };
 }
 
 // GET /api/auth/config — tells the frontend which features are enabled

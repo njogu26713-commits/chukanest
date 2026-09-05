@@ -77,6 +77,11 @@ export const api = {
   deleteUser: (id) => req("DELETE", `/users/${id}`),
   getBookmarks: () => req("GET", "/users/me/bookmarks").then(normArr),
   toggleBookmark: (hostelId) => req("POST", `/users/me/bookmarks/${hostelId}`),
+
+  // Premium / M-Pesa
+  getPremiumStatus: () => req("GET", "/payments/status"),
+  startPremiumPayment: (phone) => req("POST", "/payments/stk", { phone }),
+  getPayments: () => req("GET", "/payments").then(normArr),
 };
 
 export function saveAuth(token, user) {

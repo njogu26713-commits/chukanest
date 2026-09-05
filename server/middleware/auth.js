@@ -15,6 +15,14 @@ export function requireAuth(req, res, next) {
   }
 }
 
+export function optionalAuth(req, _res, next) {
+  const header = req.headers.authorization;
+  if (header?.startsWith("Bearer ")) {
+    try { req.user = jwt.verify(header.slice(7), JWT_SECRET); } catch { /* treat as guest */ }
+  }
+  next();
+}
+
 export function requireAdmin(req, res, next) {
   if (req.user?.role !== "admin")
     return res.status(403).json({ error: "Admin access required" });

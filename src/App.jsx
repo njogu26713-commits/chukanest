@@ -438,6 +438,11 @@ function HostelCard({ hostel, isFav, onToggleFav, onOpen }) {
             <span className="text-[11px] font-bold" style={{ ...fBody, color: "#8A6D0C" }}>Verified</span>
           </div>
         )}
+        {hostel.accessLevel === "premium" && (
+          <div className="absolute left-3 bottom-3 flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: hostel.isLocked ? "rgba(20,37,27,0.82)" : "rgba(201,162,39,0.95)", color: "#fff" }}>
+            <Lock size={11} /> <span className="text-[10px] font-bold" style={fBody}>{hostel.isLocked ? "Premium" : "Unlocked"}</span>
+          </div>
+        )}
 
         {/* Dot indicators */}
         {hostel.images.length > 1 && (
@@ -1064,9 +1069,55 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
   );
 }
 
+function PremiumUpgradeCard({ showToast, onActivated }) {
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [waiting, setWaiting] = useState(false);
+
+  const startPayment = async () => {
+    if (!phone.trim()) { showToast("Enter your M-Pesa phone number"); return; }
+    setLoading(true);
+    try {
+      const result = await api.startPremiumPayment(phone);
+      showToast(result.message || "Check your phone for the M-Pesa prompt");
+      setWaiting(true);
+      let attempts = 0;
+      const poll = async () => {
+        attempts += 1;
+        try {
+          const status = await api.getPremiumStatus();
+          if (status.active) { onActivated(status); showToast("Premium access activated ✓"); setWaiting(false); setLoading(false); return; }
+        } catch {}
+        if (attempts < 15) setTimeout(poll, 4000);
+        else { setWaiting(false); setLoading(false); showToast("Payment is still processing. Refresh after confirmation."); }
+      };
+      setTimeout(poll, 4000);
+    } catch (err) {
+      showToast(err.message || "Could not start payment");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-3xl p-5" style={{ background: C.mint, border: `1px solid ${C.primary}33` }}>
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: C.primary }}><Lock size={20} color="#fff" /></div>
+        <div>
+          <div className="text-[16px] font-extrabold" style={{ ...fDisplay, color: C.primaryDark }}>Unlock Premium listings</div>
+          <div className="mt-1 text-[12px] leading-relaxed" style={{ ...fBody, color: C.inkSoft }}>Pay KES 400 by M-Pesa STK Push to view premium houses, contact details and photos for 30 days.</div>
+        </div>
+      </div>
+      <div className="mt-4 flex gap-2">
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07XX XXX XXX" className="min-w-0 flex-1 rounded-2xl px-3.5 py-3 text-[13px] outline-none" style={{ ...fBody, background: C.surface, border: `1px solid ${C.line}`, color: C.ink }} />
+        <PrimaryButton onClick={startPayment} disabled={loading}>{waiting ? "Waiting…" : loading ? "Sending…" : "Pay KES 400"}</PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------- DETAIL SCREEN ---------------------------------- */
 
-function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadReviews, onAddReview, showToast, currentUser }) {
+function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadReviews, onAddReview, showToast, currentUser, onPremiumActivated }) {
   const [imgIdx, setImgIdx] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
@@ -1200,6 +1251,9 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
       </div>
 
       <div className="flex-1 overflow-y-auto pb-28">
+        {hostel.isLocked && (
+          <div className="px-4 pt-4"><PremiumUpgradeCard showToast={showToast} onActivated={onPremiumActivated} /></div>
+        )}
         {/* Header info */}
         <div className="px-4 pt-4">
           <div className="flex items-start justify-between gap-2">
@@ -1266,7 +1320,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
             </div>
           )}
 
-          {tab === "amenities" && (
+          {tab === "amenities" && !hostel.isLocked && (
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {hostel.amenities.map((key) => {
                 const meta = AMENITY_META[key];
@@ -1284,7 +1338,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
             </div>
           )}
 
-          {tab === "rules" && (
+          {tab === "rules" && !hostel.isLocked && (
             <div className="space-y-2">
               {hostel.rules.map((rule, i) => (
                 <div key={i} className="flex items-start gap-2.5 rounded-2xl px-3.5 py-3" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
@@ -1295,7 +1349,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
             </div>
           )}
 
-          {tab === "reviews" && (
+          {tab === "reviews" && !hostel.isLocked && (
             <div>
               {/* AI Summary Card */}
               {summaryLoading && (
@@ -1922,7 +1976,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
   const empty = {
     name: "", location: "", contactRole: "Landlord", phone: "", roomType: "Bedsitter",
     price: "", billingPeriod: "month", distance: "", availableRooms: "", availability: "available", description: "",
-    amenities: [], status: "active", latlng: [],
+    amenities: [], accessLevel: "free", status: "active", latlng: [],
   };
 
   const toForm = (h) => ({
@@ -1938,6 +1992,7 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
     availability: Number(h.availableRooms) > 0 ? "available" : "full",
     description: h.description ?? "",
     amenities: h.amenities ?? [],
+    accessLevel: h.accessLevel === "premium" ? "premium" : "free",
     status: h.status ?? "active",
     latlng: h.latlng ?? [],
   });
@@ -2193,6 +2248,16 @@ function HostelFormModal({ hostel, onClose, onSaved, showToast }) {
 
           {/* Status */}
           <div>
+            <div className="mb-1.5" style={labelStyle}>Listing access</div>
+            <select style={selectStyle} value={form.accessLevel} onChange={(e) => set("accessLevel", e.target.value)}>
+              <option value="free">Free — visible to everyone</option>
+              <option value="premium">Premium — requires KES 400 monthly access</option>
+            </select>
+            <div className="mt-1 text-[10px]" style={{ ...fBody, color: C.inkSoft }}>Premium listings stay discoverable but hide contact details and full media until payment.</div>
+          </div>
+
+          {/* Status */}
+          <div>
             <div className="mb-1.5" style={labelStyle}>Status</div>
             <select style={selectStyle} value={form.status} onChange={(e) => set("status", e.target.value)}>
               {["active", "pending", "rejected"].map((s) => <option key={s}>{s}</option>)}
@@ -2432,6 +2497,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
   const [pendingVerifications, setPendingVerifications] = useState([]);
   const [flagged, setFlagged] = useState([]);
   const [users, setUsers] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [supportSettings, setSupportSettings] = useState(FALLBACK_SUPPORT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [hostelModal, setHostelModal] = useState(null); // null | { hostel: null } | { hostel: <obj> }
@@ -2439,18 +2505,20 @@ function AdminScreen({ showToast, onHostelSaved }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const [active, pending, flaggedRevs, userList, support] = await Promise.all([
+        const [active, pending, flaggedRevs, userList, support, paymentList] = await Promise.all([
           api.getHostels(),
           api.getHostels("pending"),
           api.getFlaggedReviews(),
           api.getUsers(),
           api.getSupport(),
+          api.getPayments(),
         ]);
         setListings(active);
         setPendingVerifications(pending);
         setFlagged(flaggedRevs);
         setUsers(userList);
         setSupportSettings(normalizeSupportSettings(support));
+        setPayments(paymentList);
       } catch (err) {
         showToast("Failed to load admin data");
       } finally {
@@ -2475,6 +2543,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
     { id: "overview",      label: "Overview",  icon: LayoutDashboard },
     { id: "listings",      label: "Listings",  icon: Building2 },
     { id: "users",         label: "Users",     icon: Users },
+    { id: "payments",      label: "Payments",  icon: BarChart3, badge: payments.filter((p) => p.status === "completed").length },
     { id: "verifications", label: "Verify",    icon: Clock, badge: pendingVerifications.length },
     { id: "flagged",       label: "Flagged",   icon: Flag, badge: flagged.length },
     { id: "support",       label: "Support",   icon: MessageCircle },
@@ -2739,6 +2808,38 @@ function AdminScreen({ showToast, onHostelSaved }) {
                     </button>
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── PAYMENTS ── */}
+        {activeTab === "payments" && (
+          <div className="px-4 py-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-[15px] font-bold" style={{ ...fDisplay, color: C.ink }}>Premium payments</div>
+                <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{payments.length} payment attempts · KES 400 per 30 days</div>
+              </div>
+              <Badge tone="gold">M-Pesa</Badge>
+            </div>
+            {payments.length === 0 ? (
+              <div className="rounded-2xl p-8 text-center" style={{ background: C.surface, border: `1px solid ${C.line}` }}><div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>No payments yet</div></div>
+            ) : payments.map((p) => (
+              <div key={p.id} className="rounded-2xl p-3.5" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{p.user?.name || "Unknown user"}</div>
+                    <div className="text-[11px] truncate" style={{ ...fBody, color: C.inkSoft }}>{p.user?.email || "—"} · {p.phone}</div>
+                  </div>
+                  <Badge tone={p.status === "completed" ? "neutral" : p.status === "pending" ? "gold" : "danger"}>{p.status}</Badge>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]" style={{ ...fBody, color: C.inkSoft }}>
+                  <div>Amount: <strong style={{ color: C.ink }}>KES {Number(p.amount || 400).toLocaleString()}</strong></div>
+                  <div>Receipt: <strong style={{ color: C.ink }}>{p.mpesaReceiptNumber || "Pending"}</strong></div>
+                  <div>Created: {p.createdAt ? new Date(p.createdAt).toLocaleString() : "—"}</div>
+                  <div>Access until: {p.expiresAt ? new Date(p.expiresAt).toLocaleDateString() : "—"}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -3269,6 +3370,14 @@ export default function App() {
     });
   };
 
+  const handlePremiumActivated = async (status) => {
+    setCurrentUser((user) => ({ ...user, premiumUntil: status.premiumUntil, phone: status.phone || user?.phone }));
+    try {
+      const data = await api.getHostels();
+      setHostels(data);
+    } catch {}
+  };
+
   const handleLogout = () => {
     clearAuth();
     setRole(null);
@@ -3356,6 +3465,7 @@ export default function App() {
             onAddReview={addReview}
             showToast={showToast}
             currentUser={currentUser}
+            onPremiumActivated={handlePremiumActivated}
           />
         ) : (
           <div className="h-full">

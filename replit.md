@@ -55,6 +55,12 @@ The first server start seeds the MongoDB database when the `hostels` collection 
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for persistent image and video storage |
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+| `MPESA_CONSUMER_KEY` | Safaricom Daraja consumer key |
+| `MPESA_CONSUMER_SECRET` | Safaricom Daraja consumer secret |
+| `MPESA_SHORTCODE` | PayBill/Till shortcode used for STK Push |
+| `MPESA_PASSKEY` | Daraja Lipa na M-Pesa passkey |
+| `MPESA_CALLBACK_URL` | Public HTTPS URL ending in `/api/payments/callback` |
+| `MPESA_ENV` | `sandbox` (default) or `production` |
 
 ## Project structure
 

@@ -11,6 +11,7 @@ const hostelSchema = new mongoose.Schema(
     rating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },
     verified: { type: Boolean, default: false },
+    accessLevel: { type: String, enum: ["free", "premium"], default: "free" },
     status: { type: String, enum: ["active", "pending", "rejected"], default: "active" },
     availableRooms: { type: Number, default: 0 },
     contactRole: { type: String, enum: ["Landlord", "Caretaker"], required: true },

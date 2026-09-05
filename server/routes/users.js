@@ -16,6 +16,8 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
       role: u.role,
       joined: u.createdAt.toLocaleString("en-US", { month: "short", year: "numeric" }),
       bookmarks: u.bookmarks.length,
+      premiumUntil: u.premiumUntil || null,
+      phone: u.phone || "",
       status: u.status,
     }));
     res.json(formatted);
