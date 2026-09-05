@@ -1075,7 +1075,7 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
           </div>
         )}
 
-        {lockedPremiumCount > 0 && (
+        {lockedPremiumCount > 0 && currentUser?.role !== "admin" && (
           <div className="mt-5 rounded-3xl p-5 text-center" style={{ background: C.surface, border: `1px solid ${C.gold}55` }}>
             <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: C.goldSoft }}><Lock size={19} color={C.gold} /></div>
             <div className="mt-3 text-[16px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>Want more houses?</div>
@@ -2529,7 +2529,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
     const load = async () => {
       try {
         const [active, pending, flaggedRevs, userList, support, paymentList] = await Promise.all([
-          api.getHostels(),
+          api.getHostels("active"),
           api.getHostels("pending"),
           api.getFlaggedReviews(),
           api.getUsers(),

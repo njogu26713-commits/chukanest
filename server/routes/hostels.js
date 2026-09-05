@@ -6,7 +6,6 @@ import { requireAuth, requireAdmin, optionalAuth } from "../middleware/auth.js";
 const router = Router();
 
 async function hasPremiumAccess(req) {
-  if (req.user?.role === "admin") return true;
   if (!req.user?.id) return false;
   const user = await User.findById(req.user.id).select("premiumUntil");
   return !!(user?.premiumUntil && new Date(user.premiumUntil) > new Date());
@@ -32,7 +31,10 @@ router.get("/", optionalAuth, async (req, res) => {
   try {
     const { status } = req.query;
     const unlocked = await hasPremiumAccess(req);
-    const filter = status ? { status } : { status: "active", ...(unlocked ? {} : { accessLevel: "free" }) };
+    const adminView = status && req.user?.role === "admin";
+    const filter = status
+      ? { status, ...(adminView ? {} : { accessLevel: "free" }) }
+      : { status: "active", ...(unlocked ? {} : { accessLevel: "free" }) };
     const hostels = await Hostel.find(filter).sort({ rating: -1 });
     res.json(hostels.map((hostel) => present(hostel, unlocked)));
   } catch (err) {
