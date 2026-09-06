@@ -42,6 +42,7 @@ Add these variables to the Railway service before deploying:
 | `CLOUDINARY_CLOUD_NAME` | Yes for uploads | Cloudinary cloud name for persistent hostel media |
 | `CLOUDINARY_API_KEY` | Yes for uploads | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Yes for uploads | Cloudinary API secret |
+| `VITE_API_URL` | Only when frontend and backend are separate | Public backend URL ending in `/api`; set it before the frontend build |
 
 The first server start seeds the MongoDB database when the `hostels` collection is empty.
 
@@ -55,6 +56,7 @@ The first server start seeds the MongoDB database when the `hostels` collection 
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for persistent image and video storage |
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+| `VITE_API_URL` | Optional public API base URL for a separately hosted frontend, ending in `/api` |
 | `MPESA_CONSUMER_KEY` | Safaricom Daraja consumer key |
 | `MPESA_CONSUMER_SECRET` | Safaricom Daraja consumer secret |
 | `MPESA_SHORTCODE` | PayBill/Till shortcode used for STK Push |

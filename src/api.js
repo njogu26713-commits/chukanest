@@ -1,4 +1,4 @@
-const BASE = "/api";
+const BASE = (import.meta.env.VITE_API_URL || "/api").replace(/\/+$/, "");
 
 function getToken() {
   return localStorage.getItem("cn_token");
@@ -9,14 +9,39 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function isHtmlResponse(text, contentType) {
+  const body = text.trimStart().toLowerCase();
+  return contentType.includes("text/html") || body.startsWith("<!doctype html") || body.startsWith("<html");
+}
+
+async function parseResponse(res, endpoint) {
+  const text = await res.text();
+  if (!text) return null;
+
+  const contentType = (res.headers.get("content-type") || "").toLowerCase();
+  if (isHtmlResponse(text, contentType)) {
+    throw new Error(
+      `The API returned an HTML page for ${endpoint} instead of JSON. ` +
+      "If the frontend and backend are deployed separately, set VITE_API_URL to the backend URL ending in /api and rebuild."
+    );
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`The server returned an invalid response for ${endpoint} (HTTP ${res.status}).`);
+  }
+}
+
 async function req(method, path, body) {
-  const res = await fetch(`${BASE}${path}`, {
+  const endpoint = `${BASE}${path}`;
+  const res = await fetch(endpoint, {
     method,
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
+  const data = await parseResponse(res, endpoint);
+  if (!res.ok) throw new Error(data?.error || "Request failed");
   return data;
 }
 
@@ -62,13 +87,16 @@ export const api = {
   uploadImages: async (files) => {
     const fd = new FormData();
     for (const f of files) fd.append("images", f);
-    const res = await fetch(`${BASE}/upload/images`, {
+
+    const endpoint = `${BASE}/upload/images`;
+    const res = await fetch(endpoint, {
       method: "POST",
-      headers: authHeaders(),
+      headers: { Accept: "application/json", ...authHeaders() },
       body: fd,
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Upload failed");
+    const data = await parseResponse(res, endpoint);
+    if (!res.ok) throw new Error(data?.error || "Upload failed");
+    if (!Array.isArray(data?.urls)) throw new Error("The upload API returned no image URLs.");
     return data.urls; // string[]
   },
 

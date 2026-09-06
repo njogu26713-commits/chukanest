@@ -36,12 +36,30 @@ app.use("/api/support", supportRoutes);
 app.use("/api/payments", paymentRoutes);
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
+// Keep API failures machine-readable. Without this guard, Express can return
+// its default HTML error page, which the frontend then cannot parse as JSON.
+app.use("/api", (req, res) => {
+  res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
+});
+
 app.use(express.static(clientDist));
 app.get("*", (req, res, next) => {
   if (req.path.startsWith("/api/")) return next();
   res.sendFile(path.join(clientDist, "index.html"), (err) => {
     if (err) next();
   });
+});
+
+// Multer and other route-level errors must also stay JSON for API callers.
+app.use((err, req, res, next) => {
+  if (!req.path.startsWith("/api/")) return next(err);
+
+  console.error("API request failed:", err);
+  const status = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+  const error = err.code === "LIMIT_FILE_SIZE"
+    ? "The uploaded file is too large. Maximum size is 100 MB."
+    : err.message || "API request failed";
+  res.status(status).json({ error });
 });
 
 const PORT = process.env.PORT || process.env.API_PORT || 3001;
