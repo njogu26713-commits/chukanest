@@ -5,19 +5,23 @@ import { requireAuth, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
+const cloudinaryUrl = process.env.CLOUDINARY_URL?.trim();
+const cloudinaryCredentials = {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+  api_key: process.env.CLOUDINARY_API_KEY?.trim(),
+  api_secret: process.env.CLOUDINARY_API_SECRET?.trim(),
+};
 const hasCloudinaryConfig = Boolean(
-  process.env.CLOUDINARY_CLOUD_NAME &&
-  process.env.CLOUDINARY_API_KEY &&
-  process.env.CLOUDINARY_API_SECRET
+  cloudinaryUrl ||
+  (cloudinaryCredentials.cloud_name &&
+    cloudinaryCredentials.api_key &&
+    cloudinaryCredentials.api_secret)
 );
 
-if (hasCloudinaryConfig) {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true,
-  });
+if (cloudinaryUrl) {
+  cloudinary.config(cloudinaryUrl);
+} else if (hasCloudinaryConfig) {
+  cloudinary.config({ ...cloudinaryCredentials, secure: true });
 }
 
 // Keep files in memory briefly while Cloudinary stores them permanently.
@@ -44,7 +48,9 @@ function uploadToCloudinary(file) {
 // POST /api/upload/images — upload up to 10 images/videos to durable cloud storage
 router.post("/images", requireAuth, requireAdmin, upload.array("images", 10), async (req, res) => {
   if (!hasCloudinaryConfig) {
-    return res.status(503).json({ error: "Image storage is not configured. Add the Cloudinary variables in Railway." });
+    return res.status(503).json({
+      error: "Image storage is not configured. Set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET on the backend, then redeploy.",
+    });
   }
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: "No images uploaded" });
