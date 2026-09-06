@@ -8,6 +8,7 @@ import {
   ThumbsUp, MoreVertical, Sparkles, Loader2, Bot, Send, Moon, Sun, Bird
 } from "lucide-react";
 import { api, saveAuth, loadAuth, clearAuth } from "./api.js";
+import OwnerPortal from "./OwnerPortal.jsx";
 
 /* ---------------------------------- THEME ---------------------------------- */
 const LIGHT_PALETTE = {
@@ -3335,6 +3336,7 @@ function AiScreen({ role }) {
 export default function App() {
   const [role, setRole] = useState(() => { const s = loadAuth(); return s?.user?.role ?? null; });
   const [currentUser, setCurrentUser] = useState(() => { const s = loadAuth(); return s?.user ?? null; });
+  const ownerPath = window.location.pathname === "/owner" || window.location.pathname.startsWith("/owner/");
   const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get("support") === "1" ? "support" : "home");
   const [openHostelId, setOpenHostelId] = useState(null);
   const [hostels, setHostels] = useState([]);
@@ -3468,6 +3470,14 @@ export default function App() {
   };
 
   const openHostel = hostels.find((h) => h.id === openHostelId);
+
+  if (ownerPath) {
+    return (
+      <div className="min-h-screen w-full" style={{ background: C.bg, color: C.ink }}>
+        <OwnerPortal currentUser={currentUser} onAuthed={handleAuthed} onLogout={handleLogout} showToast={showToast} />
+      </div>
+    );
+  }
 
   if (!role) {
     return (

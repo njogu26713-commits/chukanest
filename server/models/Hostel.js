@@ -21,6 +21,9 @@ const hostelSchema = new mongoose.Schema(
     description: String,
     rules: [String],
     latlng: [Number], // [lat, lng]
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
+    ownerToken: { type: String, unique: true, sparse: true, index: true },
+    ownerVisibleUntil: { type: Date, default: null, index: true },
   },
   { timestamps: true }
 );

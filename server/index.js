@@ -13,6 +13,7 @@ import aiRoutes from "./routes/ai.js";
 import uploadRoutes from "./routes/upload.js";
 import supportRoutes from "./routes/support.js";
 import paymentRoutes from "./routes/payments.js";
+import ownerRoutes from "./routes/owners.js";
 
 const app = express();
 app.use(cors());
@@ -34,6 +35,7 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/support", supportRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/owner", ownerRoutes);
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
 // Keep API failures machine-readable. Without this guard, Express can return

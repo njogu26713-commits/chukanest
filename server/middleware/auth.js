@@ -28,3 +28,9 @@ export function requireAdmin(req, res, next) {
     return res.status(403).json({ error: "Admin access required" });
   next();
 }
+
+export function requireOwner(req, res, next) {
+  if (req.user?.role !== "owner")
+    return res.status(403).json({ error: "Owner access required" });
+  next();
+}

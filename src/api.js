@@ -56,6 +56,8 @@ export const api = {
   // Auth
   login: (email, password) => req("POST", "/auth/login", { email, password }),
   signup: (name, email, password, adminCode) => req("POST", "/auth/signup", { name, email, password, adminCode }),
+  ownerSignup: (name, email, password, phone) => req("POST", "/auth/owner/signup", { name, email, password, phone }),
+  ownerLogin: (email, password) => req("POST", "/auth/owner/login", { email, password }),
   googleLogin: (credential, adminCode) => req("POST", "/auth/google", { credential, adminCode }),
   getAuthConfig: () => req("GET", "/auth/config"),
 
@@ -116,6 +118,15 @@ export const api = {
   getPremiumStatus: () => req("GET", "/payments/status"),
   startPremiumPayment: (phone) => req("POST", "/payments/stk", { phone }),
   getPayments: () => req("GET", "/payments").then(normArr),
+
+  // Owner portal
+  getOwnerMe: () => req("GET", "/owner/me"),
+  getOwnerListings: () => req("GET", "/owner/listings").then(normArr),
+  createOwnerListing: (data) => req("POST", "/owner/listings", data).then(norm),
+  updateOwnerListing: (id, data) => req("PATCH", `/owner/listings/${id}`, data).then(norm),
+  deleteOwnerListing: (id) => req("DELETE", `/owner/listings/${id}`),
+  getOwnerStatus: () => req("GET", "/payments/owner-status"),
+  startOwnerPayment: (phone) => req("POST", "/payments/owner-stk", { phone }),
 };
 
 export function saveAuth(token, user) {

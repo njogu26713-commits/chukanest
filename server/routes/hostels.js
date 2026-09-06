@@ -12,8 +12,13 @@ async function hasPremiumAccess(req) {
   return !!(user?.premiumUntil && new Date(user.premiumUntil) > new Date());
 }
 
-function present(hostel, unlocked) {
+function present(hostel, unlocked, includeOwnerFields = false) {
   const item = hostel.toObject ? hostel.toObject() : { ...hostel };
+  if (!includeOwnerFields) {
+    delete item.owner;
+    delete item.ownerToken;
+    delete item.ownerVisibleUntil;
+  }
   const locked = item.accessLevel === "premium" && !unlocked;
   item.isLocked = locked;
   if (locked) {
@@ -33,11 +38,13 @@ router.get("/", optionalAuth, async (req, res) => {
     const { status } = req.query;
     const unlocked = await hasPremiumAccess(req);
     const adminView = req.user?.role === "admin";
-    const filter = status
-      ? { status, ...(adminView ? {} : { accessLevel: { $ne: "premium" } }) }
-      : { status: "active", ...(unlocked ? {} : { accessLevel: { $ne: "premium" } }) };
-    const hostels = await Hostel.find(filter).sort({ rating: -1 });
-    res.json(hostels.map((hostel) => present(hostel, unlocked)));
+    const filters = [
+      { status: status || "active" },
+      ...(adminView ? [] : [{ $or: [{ owner: null }, { ownerVisibleUntil: { $gt: new Date() } }] }]),
+      ...(!adminView && !unlocked ? [{ accessLevel: { $ne: "premium" } }] : []),
+    ];
+    const hostels = await Hostel.find({ $and: filters }).sort({ rating: -1 });
+    res.json(hostels.map((hostel) => present(hostel, unlocked, adminView)));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -59,8 +66,11 @@ router.get("/:id", optionalAuth, async (req, res) => {
     const hostel = await Hostel.findById(req.params.id);
     if (!hostel) return res.status(404).json({ error: "Not found" });
     const unlocked = await hasPremiumAccess(req);
-    if (hostel.accessLevel === "premium" && !unlocked) return res.status(404).json({ error: "Not found" });
-    res.json(present(hostel, unlocked));
+    const adminView = req.user?.role === "admin";
+    const ownerExpired = hostel.owner && (!hostel.ownerVisibleUntil || new Date(hostel.ownerVisibleUntil) <= new Date());
+    if (!adminView && ownerExpired) return res.status(404).json({ error: "Not found" });
+    if (!adminView && hostel.accessLevel === "premium" && !unlocked) return res.status(404).json({ error: "Not found" });
+    res.json(present(hostel, unlocked, adminView));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

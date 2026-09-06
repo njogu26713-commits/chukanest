@@ -15,7 +15,16 @@ function signToken(user) {
 }
 
 function userPayload(user) {
-  return { id: user._id, name: user.name, email: user.email, role: user.role, provider: user.provider, premiumUntil: user.premiumUntil || null, phone: user.phone || "" };
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    provider: user.provider,
+    premiumUntil: user.premiumUntil || null,
+    ownerSubscriptionUntil: user.ownerSubscriptionUntil || null,
+    phone: user.phone || "",
+  };
 }
 
 // GET /api/auth/config — tells the frontend which features are enabled
@@ -46,6 +55,55 @@ router.post("/signup", async (req, res) => {
     }
 
     const user = await User.create({ name, email, password, role, provider: "local" });
+    const token = signToken(user);
+    res.json({ token, user: userPayload(user) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/owner/signup — owner accounts are created only from the private owner portal.
+router.post("/owner/signup", async (req, res) => {
+  try {
+    const { name, email, password, phone } = req.body;
+    if (!name || !email || !password || !phone) {
+      return res.status(400).json({ error: "Name, email, password and M-Pesa phone are required" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) return res.status(409).json({ error: "Email already registered" });
+
+    const user = await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      password,
+      phone: phone.trim(),
+      role: "owner",
+      provider: "local",
+    });
+    const token = signToken(user);
+    res.json({ token, user: userPayload(user) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/owner/login — owner-only login for the /owner portal.
+router.post("/owner/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: "Email and password are required" });
+
+    const user = await User.findOne({ email: email.toLowerCase().trim(), role: "owner" });
+    if (!user) return res.status(401).json({ error: "Invalid owner email or password" });
+    if (user.provider === "google" && !user.password) {
+      return res.status(401).json({ error: "This owner account uses Google sign-in." });
+    }
+    if (!(await user.comparePassword(password))) {
+      return res.status(401).json({ error: "Invalid owner email or password" });
+    }
+
     const token = signToken(user);
     res.json({ token, user: userPayload(user) });
   } catch (err) {

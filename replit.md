@@ -7,7 +7,8 @@ A hostel-finder web app for Chuka University students in Kenya. Students can bro
 - **Frontend**: React 18 + Vite (port 5000)
 - **Backend**: Node.js + Express (port 3001)
 - **Database**: MongoDB (via Mongoose)
-- **Auth**: JWT (`SESSION_SECRET` env var)
+- **Auth**: JWT (`SESSION_SECRET` env var), with student, owner, and admin roles
+- **Owner portal**: `/owner`; owners pay KSh 999 for 30 days of listing visibility
 
 ## Running the app locally
 
@@ -63,7 +64,7 @@ The first server start seeds the MongoDB database when the `hostels` collection 
 | `MPESA_CONSUMER_SECRET` | Safaricom Daraja consumer secret |
 | `MPESA_SHORTCODE` | PayBill/Till shortcode used for STK Push |
 | `MPESA_PASSKEY` | Daraja Lipa na M-Pesa passkey |
-| `MPESA_CALLBACK_URL` | Public HTTPS URL ending in `/api/payments/callback` |
+| `MPESA_CALLBACK_URL` | Public HTTPS URL ending in `/api/payments/callback`; required to activate live owner subscriptions after STK payment |
 | `MPESA_ENV` | `sandbox` (default) or `production` |
 | `MPESA_TEMPORARY_MODE` | Temporary testing mode; defaults to enabled when Daraja is not configured. Set to `false` to require live M-Pesa. |
 
@@ -81,8 +82,9 @@ server/
     Review.js       — Review schema
     User.js         — User schema (bcrypt passwords)
   routes/
-    auth.js         — POST /api/auth/login|signup
-    hostels.js      — CRUD /api/hostels
+    auth.js         — student/admin auth plus owner signup/login
+    owners.js       — owner profile, tokenized listing CRUD
+    hostels.js      — student catalogue and admin CRUD /api/hostels
     reviews.js      — /api/hostels/:id/reviews + flagged
     users.js        — /api/users + bookmarks
 src/
@@ -108,6 +110,10 @@ src/
 - `GET /api/reviews/flagged` — flagged reviews (admin only)
 - `GET /api/users` — user list (admin only)
 - `POST /api/users/me/bookmarks/:hostelId` — toggle bookmark
+- `POST /api/auth/owner/signup` / `POST /api/auth/owner/login` — owner authentication
+- `GET /api/owner/listings` — owner’s listings and generated tokens
+- `POST /api/owner/listings` — create a listing only with an active KSh 999 entitlement
+- `POST /api/payments/owner-stk` — start the owner subscription payment
 
 ## Notes
 

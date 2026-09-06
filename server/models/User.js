@@ -8,9 +8,10 @@ const userSchema = new mongoose.Schema(
     password: { type: String, default: null },          // null for Google-only accounts
     googleId: { type: String, sparse: true, default: null },
     provider: { type: String, enum: ["local", "google"], default: "local" },
-    role: { type: String, enum: ["student", "admin"], default: "student" },
+    role: { type: String, enum: ["student", "owner", "admin"], default: "student" },
     bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Hostel" }],
     premiumUntil: { type: Date, default: null },
+    ownerSubscriptionUntil: { type: Date, default: null },
     phone: { type: String, default: "" },
     status: { type: String, enum: ["active", "flagged", "suspended"], default: "active" },
   },
