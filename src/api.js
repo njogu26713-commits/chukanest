@@ -16,7 +16,10 @@ function isHtmlResponse(text, contentType) {
 
 async function parseResponse(res, endpoint) {
   const text = await res.text();
-  if (!text) return null;
+  if (!text) {
+    if (!res.ok) throw new Error(`The request failed for ${endpoint} (HTTP ${res.status}).`);
+    return null;
+  }
 
   const contentType = (res.headers.get("content-type") || "").toLowerCase();
   if (isHtmlResponse(text, contentType)) {
@@ -95,7 +98,9 @@ export const api = {
       body: fd,
     });
     const data = await parseResponse(res, endpoint);
-    if (!res.ok) throw new Error(data?.error || "Upload failed");
+    if (!res.ok) {
+      throw new Error(data?.error || `Upload failed (HTTP ${res.status}).`);
+    }
     if (!Array.isArray(data?.urls)) throw new Error("The upload API returned no image URLs.");
     return data.urls; // string[]
   },

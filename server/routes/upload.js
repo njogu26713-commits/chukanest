@@ -54,8 +54,15 @@ router.post("/images", requireAuth, requireAdmin, upload.array("images", 10), as
     const urls = await Promise.all(req.files.map(uploadToCloudinary));
     res.json({ urls });
   } catch (err) {
-    console.error("Cloudinary upload failed:", err.message);
-    res.status(502).json({ error: "Could not store the uploaded media" });
+    const providerMessage = err?.error?.message || err?.message;
+    console.error("Cloudinary upload failed:", providerMessage || err);
+
+    // Return a useful, non-secret diagnostic so deployment/configuration issues
+    // can be corrected without exposing Cloudinary credentials.
+    const error = providerMessage
+      ? `Cloudinary upload failed: ${providerMessage}`
+      : "Cloudinary upload failed. Check the server Cloudinary configuration.";
+    res.status(502).json({ error });
   }
 });
 
