@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
-import { requireAuth, requireAdmin } from "../middleware/auth.js";
+import { requireAuth, requireAdminOrOwner } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -46,7 +46,7 @@ function uploadToCloudinary(file) {
 }
 
 // POST /api/upload/images — upload up to 10 images/videos to durable cloud storage
-router.post("/images", requireAuth, requireAdmin, upload.array("images", 10), async (req, res) => {
+router.post("/images", requireAuth, requireAdminOrOwner, upload.array("images", 10), async (req, res) => {
   if (!hasCloudinaryConfig) {
     return res.status(503).json({
       error: "Image storage is not configured. Set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET on the backend, then redeploy.",
