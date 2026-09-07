@@ -11,17 +11,29 @@ const cloudinaryCredentials = {
   api_key: process.env.CLOUDINARY_API_KEY?.trim(),
   api_secret: process.env.CLOUDINARY_API_SECRET?.trim(),
 };
-const hasCloudinaryConfig = Boolean(
-  cloudinaryUrl ||
-  (cloudinaryCredentials.cloud_name &&
-    cloudinaryCredentials.api_key &&
-    cloudinaryCredentials.api_secret)
-);
-
-if (cloudinaryUrl) {
-  cloudinary.config(cloudinaryUrl);
-} else if (hasCloudinaryConfig) {
-  cloudinary.config({ ...cloudinaryCredentials, secure: true });
+let hasCloudinaryConfig = false;
+try {
+  if (cloudinaryUrl) {
+    // cloudinary.config() does not accept the URL as a positional argument.
+    // Parse the standard CLOUDINARY_URL into the SDK's object format explicitly.
+    const parsed = new URL(cloudinaryUrl);
+    if (parsed.protocol !== "cloudinary:" || !parsed.hostname || !parsed.username || !parsed.password) {
+      throw new Error("CLOUDINARY_URL must use cloudinary://API_KEY:API_SECRET@CLOUD_NAME");
+    }
+    cloudinary.config({
+      cloud_name: parsed.hostname,
+      api_key: decodeURIComponent(parsed.username),
+      api_secret: decodeURIComponent(parsed.password),
+      secure: true,
+    });
+    hasCloudinaryConfig = true;
+  } else if (cloudinaryCredentials.cloud_name && cloudinaryCredentials.api_key && cloudinaryCredentials.api_secret) {
+    cloudinary.config({ ...cloudinaryCredentials, secure: true });
+    hasCloudinaryConfig = true;
+  }
+} catch (configError) {
+  console.error("Invalid Cloudinary configuration:", configError.message);
+  hasCloudinaryConfig = false;
 }
 
 // Keep files in memory briefly while Cloudinary stores them permanently.
