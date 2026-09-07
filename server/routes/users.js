@@ -11,8 +11,8 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
     const users = await User.find().select("-password").sort({ createdAt: 1 });
     const formatted = users.map((u) => ({
       id: u._id,
-      name: u.name,
-      email: u.email,
+      name: String(u.name || "").trim() || (u.email ? String(u.email).split("@")[0] : "Unnamed user"),
+      email: u.email || "No email recorded",
       role: u.role,
       joined: u.createdAt.toLocaleString("en-US", { month: "short", year: "numeric" }),
       bookmarks: u.bookmarks.length,

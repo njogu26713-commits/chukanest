@@ -2830,12 +2830,12 @@ function AdminScreen({ showToast, onHostelSaved }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{u.name || u.email?.split("@")[0] || "Unknown"}</div>
+                    <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{u.name || u.email?.split("@")[0] || "Unnamed user"}</div>
                     {u.role === "admin" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.goldSoft, color: C.gold }}>Admin</span>}
                     {u.status === "flagged" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.dangerSoft, color: C.danger }}>Flagged</span>}
                     {u.status === "suspended" && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: C.dangerSoft, color: C.danger }}>Suspended</span>}
                   </div>
-                  <div className="text-[11px] truncate" style={{ ...fBody, color: C.inkSoft }}>{u.email}</div>
+                  <div className="text-[11px] truncate" style={{ ...fBody, color: C.inkSoft }}>{u.email || "No email recorded · legacy account"}</div>
                   <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Joined {u.joined} · {u.bookmarks} saved</div>
                 </div>
                 {u.role !== "admin" && (
