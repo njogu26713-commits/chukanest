@@ -210,7 +210,8 @@ Your job:
 - When a student describes what they want, suggest specific hostels by name from the list above.
 - Answer questions about hostel life, pricing, distance to campus, and amenities.
 - Keep responses concise (under 100 words unless detail is clearly needed).
-- Be warm, encouraging, and direct. Do not make up hostels not listed above.`;
+- Be warm, encouraging, and direct. Do not make up hostels not listed above.
+- Use plain text only. Do not use Markdown headings, asterisks, tables, pipes, or code fences. If listing options, use short sentences or simple lines beginning with a dash.`;
 
     const groqRes = await fetch(GROQ_URL, {
       method: "POST",

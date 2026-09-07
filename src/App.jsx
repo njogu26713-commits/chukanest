@@ -3266,6 +3266,46 @@ function AppNav({ tab, setTab, role, dark, toggleDark }) {
 
 /* ────────────────────────── AI CHAT PAGE ────────────────────────── */
 
+function formatAiText(value = "") {
+  const lines = String(value)
+    .replace(/```[\s\S]*?```/g, (block) => block.replace(/```[\w-]*\n?/g, ""))
+    .split("\n");
+  const cleaned = [];
+  for (const raw of lines) {
+    let line = raw.trim();
+    if (!line || /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/.test(line)) continue;
+    if (line.includes("|") && line.split("|").length >= 3) {
+      const prefix = line.split("|")[0].trim();
+      const cells = line.split("|")
+        .map((part) => part.trim())
+        .filter((part) => part && !/^:?-{2,}:?$/.test(part));
+      const tableCells = prefix ? cells : cells.slice(1);
+      const columns = tableCells.length >= 4 ? 4 : tableCells.length;
+      const rows = [];
+      for (let index = 0; index < tableCells.length; index += columns) {
+        const row = tableCells.slice(index, index + columns);
+        if (row.length === columns && !row.every((cell) => /^(Hostel|Room type|Price|Distance)$/i.test(cell))) {
+          rows.push(`• ${row.join(" · ")}`);
+        }
+      }
+      line = `${prefix}${rows.length ? `\n${rows.join("\n")}` : ` ${tableCells.join(" · ")}`}`;
+    }
+    line = line
+      .replace(/^#{1,6}\s*/, "")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/__(.*?)__/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/_(.*?)_/g, "$1")
+      .replace(/^[*-]\s+/, "• ")
+      .replace(/^\d+[.)]\s+/, "• ")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    if (line) cleaned.push(line);
+  }
+  return cleaned.join("\n");
+}
+
 function AiScreen({ role }) {
   const GREETING = "Hi! 👋 I'm your ChukaNest assistant. Tell me what you're looking for — budget, room type, amenities — and I'll point you to the right hostel.";
   const [messages, setMessages] = useState([{ role: "assistant", content: GREETING }]);
@@ -3354,7 +3394,7 @@ function AiScreen({ role }) {
           </div>
           <div>
             <div className="text-[16px] font-bold text-white" style={fDisplay}>ChukaNest AI</div>
-            <div className="text-[11px] text-white/70" style={fBody}>Powered by Groq · llama-3.1-8b-instant</div>
+            <div className="text-[11px] text-white/70" style={fBody}>Powered by Groq · GPT-OSS</div>
           </div>
         </div>
 
@@ -3377,7 +3417,7 @@ function AiScreen({ role }) {
                   ...fBody,
                 }}
               >
-                {m.content}
+                <span className="whitespace-pre-line">{formatAiText(m.content)}</span>
               </div>
             </div>
           ))}
@@ -3392,7 +3432,7 @@ function AiScreen({ role }) {
                 className="max-w-[78%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed"
                 style={{ background: C.surface, color: C.ink, borderRadius: "18px 18px 18px 4px", border: `1px solid ${C.line}`, ...fBody }}
               >
-                {streamText}
+                <span className="whitespace-pre-line">{formatAiText(streamText)}</span>
                 <span className="inline-block w-1.5 h-3.5 ml-0.5 rounded-sm animate-pulse" style={{ background: C.primary, verticalAlign: "middle" }} />
               </div>
             </div>
