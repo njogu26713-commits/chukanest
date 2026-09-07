@@ -56,7 +56,10 @@ router.patch("/", requireAuth, requireAdmin, async (req, res) => {
 
     const settings = await SupportSettings.findOneAndUpdate(
       { key: "default" },
-      { $set: updates, $setOnInsert: DEFAULT_SUPPORT_SETTINGS },
+      // Defaults are applied by the schema on insert. Repeating the same
+      // fields in $setOnInsert causes MongoDB to reject updates with a path
+      // conflict when an existing settings document is updated.
+      { $set: updates, $setOnInsert: { key: "default" } },
       { new: true, upsert: true, runValidators: true }
     );
     res.json(settings);
