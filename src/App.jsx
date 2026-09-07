@@ -2540,7 +2540,7 @@ function printOwnerPaymentReceipt(payment) {
     <div class="brand">ChukaNest</div><div class="subtitle">Verified accommodation platform</div><div class="line"></div>
     <div class="title">OWNER LISTING PAYMENT RECEIPT</div>
     <div class="row"><span class="label">Receipt date</span><span class="value">${date.toLocaleDateString()}</span></div>
-    <div class="row"><span class="label">Owner</span><span class="value">${owner.name || "—"}</span></div>
+    <div class="row"><span class="label">Owner</span><span class="value">${owner.name || payment?.ownerName || "—"}</span></div>
     <div class="row"><span class="label">Email</span><span class="value">${owner.email || "—"}</span></div>
     <div class="row"><span class="label">M-Pesa code</span><span class="value code">${payment?.mpesaReceiptNumber || "—"}</span></div>
     <div class="row"><span class="label">Amount paid</span><span class="value total">${money}</span></div>
@@ -2560,7 +2560,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
   const [supportSettings, setSupportSettings] = useState(FALLBACK_SUPPORT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [hostelModal, setHostelModal] = useState(null); // null | { hostel: null } | { hostel: <obj> }
-  const [manualPayment, setManualPayment] = useState({ ownerId: "", amount: "999", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
+  const [manualPayment, setManualPayment] = useState({ ownerId: "", ownerName: "", amount: "999", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
   const [savingManualPayment, setSavingManualPayment] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState(null);
 
@@ -2888,7 +2888,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                if (!manualPayment.ownerId) return showToast("Select an owner first");
+                if (!manualPayment.ownerName.trim()) return showToast("Enter the owner name first");
                 setSavingManualPayment(true);
                 try {
                   const saved = await api.recordManualOwnerPayment(manualPayment);
@@ -2897,7 +2897,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
                   setUsers((current) => current.map((user) => user.id === manualPayment.ownerId
                     ? { ...user, phone: manualPayment.phone || user.phone, ownerSubscriptionUntil: saved.expiresAt }
                     : user));
-                  setManualPayment({ ownerId: "", amount: "999", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
+                  setManualPayment({ ownerId: "", ownerName: "", amount: "999", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
                   showToast("Manual owner payment recorded and access activated ✓");
                 } catch (err) {
                   showToast(err.message || "Could not record payment");
@@ -2914,18 +2914,21 @@ function AdminScreen({ showToast, onHostelSaved }) {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <label className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
-                  Owner *
+                  Owner name *
+                  <input required value={manualPayment.ownerName} onChange={(e) => setManualPayment((p) => ({ ...p, ownerName: e.target.value }))} placeholder="Type the owner's full name" className="mt-1 w-full rounded-xl px-3 py-2.5 text-[12px] outline-none" style={{ ...fBody, background: C.surface, color: C.ink, border: `1px solid ${C.line}` }} />
+                </label>
+                <label className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                  Registered owner account (optional)
                   <select
-                    required
                     value={manualPayment.ownerId}
                     onChange={(e) => {
                       const selected = users.find((user) => user.id === e.target.value);
-                      setManualPayment((p) => ({ ...p, ownerId: e.target.value, phone: p.phone || selected?.phone || "" }));
+                      setManualPayment((p) => ({ ...p, ownerId: e.target.value, ownerName: selected?.name || p.ownerName, phone: p.phone || selected?.phone || "" }));
                     }}
                     className="mt-1 w-full rounded-xl px-3 py-2.5 text-[12px] outline-none"
                     style={{ ...fBody, background: C.surface, color: C.ink, border: `1px solid ${C.line}` }}
                   >
-                    <option value="">Select an owner</option>
+                    <option value="">No account / manual owner</option>
                     {users.filter((user) => user.role === "owner").map((owner) => (
                       <option key={owner.id} value={owner.id}>{owner.name} · {owner.email}</option>
                     ))}
@@ -2973,7 +2976,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
                   <CheckCircle2 size={24} color={C.primary} />
                 </div>
                 <div className="mt-3 rounded-xl p-3 text-[12px]" style={{ background: C.bg, border: `1px dashed ${C.line}`, ...fBody }}>
-                  <div className="flex justify-between gap-3"><span style={{ color: C.inkSoft }}>Owner</span><strong style={{ color: C.ink }}>{receiptPayment.user?.name || "—"}</strong></div>
+                  <div className="flex justify-between gap-3"><span style={{ color: C.inkSoft }}>Owner</span><strong style={{ color: C.ink }}>{receiptPayment.user?.name || receiptPayment.ownerName || "—"}</strong></div>
                   <div className="flex justify-between gap-3 mt-2"><span style={{ color: C.inkSoft }}>M-Pesa code</span><strong className="font-mono" style={{ color: C.ink }}>{receiptPayment.mpesaReceiptNumber || "—"}</strong></div>
                   <div className="flex justify-between gap-3 mt-2"><span style={{ color: C.inkSoft }}>Amount</span><strong style={{ color: C.primary }}>KES {Number(receiptPayment.amount || 0).toLocaleString()}</strong></div>
                   <div className="flex justify-between gap-3 mt-2"><span style={{ color: C.inkSoft }}>Access until</span><strong style={{ color: C.ink }}>{receiptPayment.expiresAt ? new Date(receiptPayment.expiresAt).toLocaleDateString() : "—"}</strong></div>
@@ -2990,7 +2993,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
               <div key={p.id} className="rounded-2xl p-3.5" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{p.user?.name || "Unknown user"}</div>
+                    <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{p.user?.name || p.ownerName || "Unknown user"}</div>
                     <div className="text-[11px] truncate" style={{ ...fBody, color: C.inkSoft }}>{p.user?.email || "—"} · {p.phone || "—"}</div>
                   </div>
                   <Badge tone={p.status === "completed" ? "neutral" : p.status === "pending" ? "gold" : "danger"}>{p.status}</Badge>

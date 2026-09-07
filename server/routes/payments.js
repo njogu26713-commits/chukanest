@@ -230,6 +230,7 @@ router.post("/callback", async (req, res) => {
 router.post("/admin-owner-manual", requireAuth, requireAdmin, async (req, res) => {
   try {
     const ownerId = String(req.body.ownerId || "").trim();
+    const ownerName = String(req.body.ownerName || "").trim();
     const amount = Number(req.body.amount);
     const days = Number(req.body.days || SUBSCRIPTION_DAYS);
     const phone = normalizePhone(req.body.phone || "");
@@ -237,8 +238,8 @@ router.post("/admin-owner-manual", requireAuth, requireAdmin, async (req, res) =
     const paidAt = req.body.paidAt ? new Date(req.body.paidAt) : new Date();
     const notes = String(req.body.notes || "").trim();
 
-    if (!ownerId || !Number.isFinite(amount) || amount <= 0 || !transactionCode) {
-      return res.status(400).json({ error: "Select an owner, enter a valid amount, and provide the M-Pesa transaction code." });
+    if (!ownerName || !Number.isFinite(amount) || amount <= 0 || !transactionCode) {
+      return res.status(400).json({ error: "Enter the owner name, a valid amount, and the M-Pesa transaction code." });
     }
     if (!Number.isInteger(days) || days < 1 || days > 365) {
       return res.status(400).json({ error: "Access duration must be a whole number between 1 and 365 days." });
@@ -250,18 +251,19 @@ router.post("/admin-owner-manual", requireAuth, requireAdmin, async (req, res) =
       return res.status(400).json({ error: "Enter a valid payment date." });
     }
 
-    const owner = await User.findOne({ _id: ownerId, role: "owner" });
-    if (!owner) return res.status(404).json({ error: "Owner account not found" });
+    const owner = ownerId ? await User.findOne({ _id: ownerId, role: "owner" }) : null;
+    if (ownerId && !owner) return res.status(404).json({ error: "Owner account not found" });
     const duplicate = await Payment.exists({ mpesaReceiptNumber: transactionCode });
     if (duplicate) return res.status(409).json({ error: "This M-Pesa transaction code has already been recorded." });
 
-    const current = owner.ownerSubscriptionUntil && new Date(owner.ownerSubscriptionUntil) > new Date()
+    const current = owner?.ownerSubscriptionUntil && new Date(owner.ownerSubscriptionUntil) > new Date()
       ? new Date(owner.ownerSubscriptionUntil)
       : new Date();
     const expiresAt = new Date(current.getTime() + days * 24 * 60 * 60 * 1000);
     const payment = await Payment.create({
-      user: owner._id,
-      phone: phone || owner.phone || "",
+      user: owner?._id || null,
+      ownerName,
+      phone: phone || owner?.phone || "",
       amount,
       type: "owner_subscription",
       status: "completed",
@@ -274,7 +276,7 @@ router.post("/admin-owner-manual", requireAuth, requireAdmin, async (req, res) =
       resultDescription: "Recorded manually by an administrator",
     });
 
-    await activateOwnerSubscription(owner._id, phone || owner.phone || "", expiresAt);
+    if (owner) await activateOwnerSubscription(owner._id, phone || owner.phone || "", expiresAt);
     const saved = await Payment.findById(payment._id)
       .populate("user", "name email phone")
       .populate("recordedBy", "name email");

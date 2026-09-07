@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 const paymentSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    ownerName: { type: String, default: "", trim: true },
     phone: { type: String, required: true },
     amount: { type: Number, required: true, default: 400 },
     type: { type: String, enum: ["premium_subscription", "owner_subscription"], default: "premium_subscription" },
