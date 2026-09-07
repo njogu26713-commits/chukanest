@@ -762,6 +762,7 @@ function AuthScreen({ onAuthed, showToast }) {
         <ShieldCheck size={12} />
         <span>Your data is safe with us · ChukaNest 2024</span>
       </div>
+      <div className="mt-4 flex justify-center"><FireboxAttribution /></div>
     </div>
   );
 
@@ -1629,6 +1630,17 @@ function MapScreen({ hostels, onOpen }) {
 
 /* ---------------------------------- SUPPORT SCREEN ---------------------------------- */
 
+const FIREBOX_LOGO_URL = "https://cvzjiblaevhowmvwjdwk.supabase.co/storage/v1/object/sign/kGJMMBSZXJ/fireboxlogo.jpeg?token=eyJraWQiOiIyNjNmYzhkNi1lYjA5LTQ4MzgtYjAyOS01NTViMDEwNjg5MzciLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJrR0pNTUJTWlhKL2ZpcmVib3hsb2dvLmpwZWciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4Nzk0NDgxLCJleHAiOjE4MjAzMzA0ODF9.rKrITcgZX42BZJBV9wbUw1QApA2uebEzpL9mPB-rbK8";
+
+function FireboxAttribution() {
+  return (
+    <a href="https://firebox.co.ke" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full px-3 py-2" style={{ background: C.surface, border: `1px solid ${C.line}`, textDecoration: "none", boxShadow: "0 2px 8px rgba(20,37,27,0.06)" }}>
+      <img src={FIREBOX_LOGO_URL} alt="Firebox" style={{ width: 44, height: 28, objectFit: "contain", borderRadius: "999px" }} />
+      <span className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>Made with Firebox</span>
+    </a>
+  );
+}
+
 const FALLBACK_SUPPORT_SETTINGS = {
   supportPhone: "+254 700 000 000",
   whatsappNumber: "+254 700 000 000",
@@ -1801,6 +1813,7 @@ function SupportScreen({ showToast, onBack, currentUser }) {
             <div className="text-[13px] font-bold" style={{ ...fDisplay, color: C.primaryDark }}>Still need help?</div>
             <div className="mt-1 text-[12px] leading-relaxed" style={{ ...fBody, color: C.inkSoft }}>Contact the administrator and include as much detail as possible so we can respond quickly.</div>
           </div>
+          <div className="flex justify-center pt-2 pb-2"><FireboxAttribution /></div>
         </div>
       </div>
     </div>
