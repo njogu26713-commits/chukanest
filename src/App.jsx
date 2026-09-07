@@ -3506,7 +3506,7 @@ function AiScreen({ role }) {
         </div>
 
         {/* Input bar */}
-        <div className="shrink-0 px-4 pb-6 pt-3" style={{ borderTop: `1px solid ${C.line}` }}>
+        <div className="shrink-0 px-4 pb-20 md:pb-6 pt-3" style={{ borderTop: `1px solid ${C.line}`, paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}>
           <div className="flex items-end gap-2 rounded-2xl px-3.5 py-2.5" style={{ background: C.surface, border: `1.5px solid ${C.line}` }}>
             <textarea
               ref={inputRef}
