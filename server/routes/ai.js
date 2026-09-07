@@ -5,10 +5,15 @@ import Review from "../models/Review.js";
 const router = Router();
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL_FAST = "llama-3.1-8b-instant";
-const MODEL_SMART = "llama-3.3-70b-versatile";
+// Groq retired the previous Llama model IDs on 16 August 2026.
+// These are current production models and support chat plus JSON mode.
+const MODEL_FAST = "openai/gpt-oss-20b";
+const MODEL_SMART = "openai/gpt-oss-120b";
 
 async function groq(model, messages, { json = false } = {}) {
+  if (!process.env.GROQ_API_KEY?.trim()) {
+    throw new Error("GROQ_API_KEY is not configured on the backend");
+  }
   const res = await fetch(GROQ_URL, {
     method: "POST",
     headers: {
@@ -179,6 +184,9 @@ Pick hostels that match the student's budget and are highly rated. Avoid already
 ───────────────────────────────────────────────────────────── */
 router.post("/chat", async (req, res) => {
   try {
+    if (!process.env.GROQ_API_KEY?.trim()) {
+      return res.status(503).json({ error: "GROQ_API_KEY is not configured on the backend" });
+    }
     const { messages = [] } = req.body;
 
     const hostels = await Hostel.find({ status: "active" })

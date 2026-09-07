@@ -37,7 +37,7 @@ Add these variables to the Railway service before deploying:
 |-----|----------|-------------|
 | `MONGODB_URI` | Yes | MongoDB Atlas connection string |
 | `SESSION_SECRET` | Yes | Long random JWT signing secret |
-| `GROQ_API_KEY` | No | Enables AI search, recommendations, and chat |
+| `GROQ_API_KEY` | No | Enables AI search, recommendations, and chat using `openai/gpt-oss-20b` and `openai/gpt-oss-120b` |
 | `GOOGLE_CLIENT_ID` | No | Enables Google sign-in |
 | `ADMIN_INVITE_CODE` | No | Enables admin account registration |
 | `CLOUDINARY_URL` | Yes for uploads, or use the three variables below | Standard Cloudinary URL: `cloudinary://API_KEY:API_SECRET@CLOUD_NAME` |
