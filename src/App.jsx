@@ -2527,6 +2527,29 @@ function SupportAdminPanel({ settings, onSaved, showToast }) {
 
 /* ---------------------------------- ADMIN SCREEN ---------------------------------- */
 
+function printOwnerPaymentReceipt(payment) {
+  const owner = payment?.user || {};
+  const date = payment?.paidAt ? new Date(payment.paidAt) : new Date();
+  const expiry = payment?.expiresAt ? new Date(payment.expiresAt) : null;
+  const money = `KES ${Number(payment?.amount || 0).toLocaleString()}`;
+  const win = window.open("", "_blank", "width=440,height=720");
+  if (!win) return;
+  win.document.write(`<!doctype html><html><head><title>ChukaNest Payment Receipt</title><style>
+    *{box-sizing:border-box}body{margin:0;background:#f2f4f1;color:#14251b;font-family:Arial,sans-serif}.receipt{width:360px;margin:24px auto;background:#fff;padding:24px;border:1px solid #dfe6df;box-shadow:0 2px 10px #0001}.brand{text-align:center;color:#1b6b45;font-size:22px;font-weight:800}.subtitle{text-align:center;color:#5c6b62;font-size:11px;margin-top:4px}.line{border-top:1px dashed #b8c5ba;margin:18px 0}.title{text-align:center;font-size:15px;font-weight:700;margin-bottom:16px}.row{display:flex;justify-content:space-between;gap:16px;margin:10px 0;font-size:12px}.label{color:#5c6b62}.value{text-align:right;font-weight:700;word-break:break-word}.total{font-size:18px;color:#1b6b45}.code{font-family:monospace;letter-spacing:1px;font-size:14px}.footer{text-align:center;color:#5c6b62;font-size:10px;line-height:1.5;margin-top:20px}@media print{body{background:#fff}.receipt{margin:0;width:100%;border:0;box-shadow:none;padding:12px}}
+  </style></head><body><main class="receipt">
+    <div class="brand">ChukaNest</div><div class="subtitle">Verified accommodation platform</div><div class="line"></div>
+    <div class="title">OWNER LISTING PAYMENT RECEIPT</div>
+    <div class="row"><span class="label">Receipt date</span><span class="value">${date.toLocaleDateString()}</span></div>
+    <div class="row"><span class="label">Owner</span><span class="value">${owner.name || "—"}</span></div>
+    <div class="row"><span class="label">Email</span><span class="value">${owner.email || "—"}</span></div>
+    <div class="row"><span class="label">M-Pesa code</span><span class="value code">${payment?.mpesaReceiptNumber || "—"}</span></div>
+    <div class="row"><span class="label">Amount paid</span><span class="value total">${money}</span></div>
+    <div class="row"><span class="label">Listing access until</span><span class="value">${expiry ? expiry.toLocaleDateString() : "—"}</span></div>
+    <div class="line"></div><div class="footer">Payment recorded manually by ChukaNest administration.<br/>Keep this receipt for your records.</div>
+  </main><script>window.onload=function(){window.focus();window.print()}</script></body></html>`);
+  win.document.close();
+}
+
 function AdminScreen({ showToast, onHostelSaved }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [listings, setListings] = useState([]);
@@ -2537,6 +2560,9 @@ function AdminScreen({ showToast, onHostelSaved }) {
   const [supportSettings, setSupportSettings] = useState(FALLBACK_SUPPORT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [hostelModal, setHostelModal] = useState(null); // null | { hostel: null } | { hostel: <obj> }
+  const [manualPayment, setManualPayment] = useState({ ownerId: "", amount: "999", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
+  const [savingManualPayment, setSavingManualPayment] = useState(false);
+  const [receiptPayment, setReceiptPayment] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -2854,11 +2880,110 @@ function AdminScreen({ showToast, onHostelSaved }) {
           <div className="px-4 py-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <div className="text-[15px] font-bold" style={{ ...fDisplay, color: C.ink }}>Premium payments</div>
-                <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{payments.length} payment attempts · KES 400 per 30 days</div>
+                <div className="text-[15px] font-bold" style={{ ...fDisplay, color: C.ink }}>Payments & transactions</div>
+                <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{payments.length} payment attempts · Premium KES 400 · Owner KES 999 / 30 days</div>
               </div>
               <Badge tone="gold">M-Pesa</Badge>
             </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!manualPayment.ownerId) return showToast("Select an owner first");
+                setSavingManualPayment(true);
+                try {
+                  const saved = await api.recordManualOwnerPayment(manualPayment);
+                  setPayments((current) => [saved, ...current]);
+                  setReceiptPayment(saved);
+                  setUsers((current) => current.map((user) => user.id === manualPayment.ownerId
+                    ? { ...user, phone: manualPayment.phone || user.phone, ownerSubscriptionUntil: saved.expiresAt }
+                    : user));
+                  setManualPayment({ ownerId: "", amount: "999", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
+                  showToast("Manual owner payment recorded and access activated ✓");
+                } catch (err) {
+                  showToast(err.message || "Could not record payment");
+                } finally {
+                  setSavingManualPayment(false);
+                }
+              }}
+              className="rounded-2xl p-4 space-y-3"
+              style={{ background: C.mint, border: `1px solid ${C.primary}35` }}
+            >
+              <div>
+                <div className="text-[14px] font-bold" style={{ ...fDisplay, color: C.ink }}>Record owner payment manually</div>
+                <div className="text-[11px] mt-0.5" style={{ ...fBody, color: C.inkSoft }}>For cash, bank transfer, or payments received outside the app. This activates listing visibility immediately.</div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <label className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                  Owner *
+                  <select
+                    required
+                    value={manualPayment.ownerId}
+                    onChange={(e) => {
+                      const selected = users.find((user) => user.id === e.target.value);
+                      setManualPayment((p) => ({ ...p, ownerId: e.target.value, phone: p.phone || selected?.phone || "" }));
+                    }}
+                    className="mt-1 w-full rounded-xl px-3 py-2.5 text-[12px] outline-none"
+                    style={{ ...fBody, background: C.surface, color: C.ink, border: `1px solid ${C.line}` }}
+                  >
+                    <option value="">Select an owner</option>
+                    {users.filter((user) => user.role === "owner").map((owner) => (
+                      <option key={owner.id} value={owner.id}>{owner.name} · {owner.email}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                  Phone
+                  <input value={manualPayment.phone} onChange={(e) => setManualPayment((p) => ({ ...p, phone: e.target.value }))} placeholder="0712345678" className="mt-1 w-full rounded-xl px-3 py-2.5 text-[12px] outline-none" style={{ ...fBody, background: C.surface, color: C.ink, border: `1px solid ${C.line}` }} />
+                </label>
+                <label className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                  Amount (KES) *
+                  <input required type="number" min="1" step="1" value={manualPayment.amount} onChange={(e) => setManualPayment((p) => ({ ...p, amount: e.target.value }))} className="mt-1 w-full rounded-xl px-3 py-2.5 text-[12px] outline-none" style={{ ...fBody, background: C.surface, color: C.ink, border: `1px solid ${C.line}` }} />
+                </label>
+                <label className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                  Access days *
+                  <input required type="number" min="1" max="365" step="1" value={manualPayment.days} onChange={(e) => setManualPayment((p) => ({ ...p, days: e.target.value }))} className="mt-1 w-full rounded-xl px-3 py-2.5 text-[12px] outline-none" style={{ ...fBody, background: C.surface, color: C.ink, border: `1px solid ${C.line}` }} />
+                </label>
+                <label className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                  M-Pesa transaction code *
+                  <input required value={manualPayment.transactionCode} onChange={(e) => setManualPayment((p) => ({ ...p, transactionCode: e.target.value.toUpperCase() }))} placeholder="e.g. QJH123ABC" className="mt-1 w-full rounded-xl px-3 py-2.5 text-[12px] uppercase outline-none" style={{ ...fBody, background: C.surface, color: C.ink, border: `1px solid ${C.line}` }} />
+                </label>
+                <label className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                  Date paid *
+                  <input required type="date" value={manualPayment.paidAt} onChange={(e) => setManualPayment((p) => ({ ...p, paidAt: e.target.value }))} className="mt-1 w-full rounded-xl px-3 py-2.5 text-[12px] outline-none" style={{ ...fBody, background: C.surface, color: C.ink, border: `1px solid ${C.line}` }} />
+                </label>
+                <label className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>
+                  Notes
+                  <input value={manualPayment.notes} onChange={(e) => setManualPayment((p) => ({ ...p, notes: e.target.value }))} placeholder="Optional internal note" className="mt-1 w-full rounded-xl px-3 py-2.5 text-[12px] outline-none" style={{ ...fBody, background: C.surface, color: C.ink, border: `1px solid ${C.line}` }} />
+                </label>
+              </div>
+              <div className="flex justify-end">
+                <button type="submit" disabled={savingManualPayment} className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-bold disabled:opacity-50" style={{ ...fBody, background: C.primary, color: "#fff" }}>
+                  {savingManualPayment ? <Spinner size={15} color="#fff" /> : <Plus size={15} />}
+                  {savingManualPayment ? "Saving…" : "Record payment"}
+                </button>
+              </div>
+            </form>
+            {receiptPayment && (
+              <div className="rounded-2xl p-4" style={{ background: C.surface, border: `1px solid ${C.primary}55` }}>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[14px] font-bold" style={{ ...fDisplay, color: C.ink }}>Receipt ready</div>
+                    <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Payment {receiptPayment.mpesaReceiptNumber} was saved successfully.</div>
+                  </div>
+                  <CheckCircle2 size={24} color={C.primary} />
+                </div>
+                <div className="mt-3 rounded-xl p-3 text-[12px]" style={{ background: C.bg, border: `1px dashed ${C.line}`, ...fBody }}>
+                  <div className="flex justify-between gap-3"><span style={{ color: C.inkSoft }}>Owner</span><strong style={{ color: C.ink }}>{receiptPayment.user?.name || "—"}</strong></div>
+                  <div className="flex justify-between gap-3 mt-2"><span style={{ color: C.inkSoft }}>M-Pesa code</span><strong className="font-mono" style={{ color: C.ink }}>{receiptPayment.mpesaReceiptNumber || "—"}</strong></div>
+                  <div className="flex justify-between gap-3 mt-2"><span style={{ color: C.inkSoft }}>Amount</span><strong style={{ color: C.primary }}>KES {Number(receiptPayment.amount || 0).toLocaleString()}</strong></div>
+                  <div className="flex justify-between gap-3 mt-2"><span style={{ color: C.inkSoft }}>Access until</span><strong style={{ color: C.ink }}>{receiptPayment.expiresAt ? new Date(receiptPayment.expiresAt).toLocaleDateString() : "—"}</strong></div>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-2">
+                  <button onClick={() => setReceiptPayment(null)} className="rounded-xl px-3 py-2 text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft, border: `1px solid ${C.line}` }}>Dismiss</button>
+                  <button onClick={() => printOwnerPaymentReceipt(receiptPayment)} className="rounded-xl px-3 py-2 text-[11px] font-bold" style={{ ...fBody, background: C.primary, color: "#fff" }}>Print / Save PDF</button>
+                </div>
+              </div>
+            )}
             {payments.length === 0 ? (
               <div className="rounded-2xl p-8 text-center" style={{ background: C.surface, border: `1px solid ${C.line}` }}><div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>No payments yet</div></div>
             ) : payments.map((p) => (
@@ -2866,15 +2991,19 @@ function AdminScreen({ showToast, onHostelSaved }) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-[13px] font-bold truncate" style={{ ...fDisplay, color: C.ink }}>{p.user?.name || "Unknown user"}</div>
-                    <div className="text-[11px] truncate" style={{ ...fBody, color: C.inkSoft }}>{p.user?.email || "—"} · {p.phone}</div>
+                    <div className="text-[11px] truncate" style={{ ...fBody, color: C.inkSoft }}>{p.user?.email || "—"} · {p.phone || "—"}</div>
                   </div>
                   <Badge tone={p.status === "completed" ? "neutral" : p.status === "pending" ? "gold" : "danger"}>{p.status}</Badge>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]" style={{ ...fBody, color: C.inkSoft }}>
                   <div>Amount: <strong style={{ color: C.ink }}>KES {Number(p.amount || 400).toLocaleString()}</strong></div>
-                  <div>Receipt: <strong style={{ color: C.ink }}>{p.mpesaReceiptNumber || "Pending"}</strong></div>
-                  <div>Created: {p.createdAt ? new Date(p.createdAt).toLocaleString() : "—"}</div>
+                  <div>M-Pesa code: <strong style={{ color: C.ink }}>{p.mpesaReceiptNumber || "Pending"}</strong></div>
+                  <div>Paid: {p.paidAt ? new Date(p.paidAt).toLocaleDateString() : (p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—")}</div>
                   <div>Access until: {p.expiresAt ? new Date(p.expiresAt).toLocaleDateString() : "—"}</div>
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-[10px]" style={{ ...fBody, color: C.inkSoft }}>
+                  <Badge tone={p.paymentMethod === "manual" ? "gold" : "neutral"}>{p.paymentMethod === "manual" ? "Manual" : "M-Pesa"}</Badge>
+                  {p.notes && <span className="truncate">{p.notes}</span>}
                 </div>
               </div>
             ))}

@@ -224,10 +224,75 @@ router.post("/callback", async (req, res) => {
   }
 });
 
+// POST /api/payments/admin-owner-manual — records an offline owner payment.
+// This is intentionally admin-only and activates the same entitlement as a
+// successful owner M-Pesa payment.
+router.post("/admin-owner-manual", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const ownerId = String(req.body.ownerId || "").trim();
+    const amount = Number(req.body.amount);
+    const days = Number(req.body.days || SUBSCRIPTION_DAYS);
+    const phone = normalizePhone(req.body.phone || "");
+    const transactionCode = String(req.body.transactionCode || req.body.receipt || "").trim().toUpperCase();
+    const paidAt = req.body.paidAt ? new Date(req.body.paidAt) : new Date();
+    const notes = String(req.body.notes || "").trim();
+
+    if (!ownerId || !Number.isFinite(amount) || amount <= 0 || !transactionCode) {
+      return res.status(400).json({ error: "Select an owner, enter a valid amount, and provide the M-Pesa transaction code." });
+    }
+    if (!Number.isInteger(days) || days < 1 || days > 365) {
+      return res.status(400).json({ error: "Access duration must be a whole number between 1 and 365 days." });
+    }
+    if (phone && !/^254(7|1)\d{8}$/.test(phone)) {
+      return res.status(400).json({ error: "Enter a valid phone number, e.g. 0712345678" });
+    }
+    if (Number.isNaN(paidAt.getTime())) {
+      return res.status(400).json({ error: "Enter a valid payment date." });
+    }
+
+    const owner = await User.findOne({ _id: ownerId, role: "owner" });
+    if (!owner) return res.status(404).json({ error: "Owner account not found" });
+    const duplicate = await Payment.exists({ mpesaReceiptNumber: transactionCode });
+    if (duplicate) return res.status(409).json({ error: "This M-Pesa transaction code has already been recorded." });
+
+    const current = owner.ownerSubscriptionUntil && new Date(owner.ownerSubscriptionUntil) > new Date()
+      ? new Date(owner.ownerSubscriptionUntil)
+      : new Date();
+    const expiresAt = new Date(current.getTime() + days * 24 * 60 * 60 * 1000);
+    const payment = await Payment.create({
+      user: owner._id,
+      phone: phone || owner.phone || "",
+      amount,
+      type: "owner_subscription",
+      status: "completed",
+      paymentMethod: "manual",
+      mpesaReceiptNumber: transactionCode,
+      notes: notes || undefined,
+      recordedBy: req.user.id,
+      paidAt,
+      expiresAt,
+      resultDescription: "Recorded manually by an administrator",
+    });
+
+    await activateOwnerSubscription(owner._id, phone || owner.phone || "", expiresAt);
+    const saved = await Payment.findById(payment._id)
+      .populate("user", "name email phone")
+      .populate("recordedBy", "name email");
+    res.status(201).json(saved);
+  } catch (err) {
+    if (err.name === "CastError") return res.status(400).json({ error: "Invalid owner account" });
+    res.status(400).json({ error: err.message || "Could not record manual payment" });
+  }
+});
+
 // GET /api/payments — admin payment table.
 router.get("/", requireAuth, requireAdmin, async (_req, res) => {
   try {
-    const payments = await Payment.find().populate("user", "name email phone").sort({ createdAt: -1 }).limit(500);
+    const payments = await Payment.find()
+      .populate("user", "name email phone role")
+      .populate("recordedBy", "name email")
+      .sort({ createdAt: -1 })
+      .limit(500);
     res.json(payments);
   } catch (err) {
     res.status(500).json({ error: err.message });

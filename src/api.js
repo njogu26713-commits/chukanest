@@ -118,6 +118,7 @@ export const api = {
   getPremiumStatus: () => req("GET", "/payments/status"),
   startPremiumPayment: (phone) => req("POST", "/payments/stk", { phone }),
   getPayments: () => req("GET", "/payments").then(normArr),
+  recordManualOwnerPayment: (data) => req("POST", "/payments/admin-owner-manual", data).then(norm),
 
   // Owner portal
   getOwnerMe: () => req("GET", "/owner/me"),
