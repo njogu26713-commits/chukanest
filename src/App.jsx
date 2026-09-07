@@ -1634,8 +1634,8 @@ const FIREBOX_LOGO_URL = "https://cvzjiblaevhowmvwjdwk.supabase.co/storage/v1/ob
 
 function FireboxAttribution() {
   return (
-    <a href="https://firebox.co.ke" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full px-3 py-2" style={{ background: C.surface, border: `1px solid ${C.line}`, textDecoration: "none", boxShadow: "0 2px 8px rgba(20,37,27,0.06)" }}>
-      <img src={FIREBOX_LOGO_URL} alt="Firebox" style={{ width: 44, height: 28, objectFit: "contain", borderRadius: "999px" }} />
+    <a href="https://firebox.live" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full px-3 py-2" style={{ background: C.surface, border: `1px solid ${C.line}`, textDecoration: "none", boxShadow: "0 2px 8px rgba(20,37,27,0.06)" }}>
+      <img src={FIREBOX_LOGO_URL} alt="Firebox" style={{ width: 42, height: 42, objectFit: "cover", borderRadius: "50%" }} />
       <span className="text-[11px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>Made with Firebox</span>
     </a>
   );
