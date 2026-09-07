@@ -1,11 +1,18 @@
 import { Router } from "express";
 import multer from "multer";
-import { v2 as cloudinary } from "cloudinary";
 import { requireAuth, requireAdminOrOwner } from "../middleware/auth.js";
+
+// The Cloudinary SDK validates CLOUDINARY_URL while it is imported. Railway
+// deployments with a malformed value would therefore crash before Express
+// could start. Remove the problematic variable for SDK initialization and
+// configure it explicitly below, using either the URL or separate credentials.
+const configuredCloudinaryUrl = process.env.CLOUDINARY_URL?.trim();
+delete process.env.CLOUDINARY_URL;
+const { v2: cloudinary } = await import("cloudinary");
 
 const router = Router();
 
-const cloudinaryUrl = process.env.CLOUDINARY_URL?.trim();
+const cloudinaryUrl = configuredCloudinaryUrl;
 const cloudinaryCredentials = {
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
   api_key: process.env.CLOUDINARY_API_KEY?.trim(),
