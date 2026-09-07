@@ -211,7 +211,7 @@ Your job:
 - Answer questions about hostel life, pricing, distance to campus, and amenities.
 - Keep responses concise (under 100 words unless detail is clearly needed).
 - Be warm, encouraging, and direct. Do not make up hostels not listed above.
-- Use plain text only. Do not use Markdown headings, asterisks, tables, pipes, or code fences. If listing options, use short sentences or simple lines beginning with a dash.`;
+- You may use one concise Markdown table for hostel comparisons and bold text for hostel names, but do not use decorative repeated asterisks or code fences.`;
 
     const groqRes = await fetch(GROQ_URL, {
       method: "POST",

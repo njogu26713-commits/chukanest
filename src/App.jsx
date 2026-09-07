@@ -3266,44 +3266,53 @@ function AppNav({ tab, setTab, role, dark, toggleDark }) {
 
 /* ────────────────────────── AI CHAT PAGE ────────────────────────── */
 
-function formatAiText(value = "") {
-  const lines = String(value)
-    .replace(/```[\s\S]*?```/g, (block) => block.replace(/```[\w-]*\n?/g, ""))
-    .split("\n");
-  const cleaned = [];
-  for (const raw of lines) {
-    let line = raw.trim();
-    if (!line || /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/.test(line)) continue;
-    if (line.includes("|") && line.split("|").length >= 3) {
-      const prefix = line.split("|")[0].trim();
-      const cells = line.split("|")
-        .map((part) => part.trim())
-        .filter((part) => part && !/^:?-{2,}:?$/.test(part));
-      const tableCells = prefix ? cells : cells.slice(1);
-      const columns = tableCells.length >= 4 ? 4 : tableCells.length;
-      const rows = [];
-      for (let index = 0; index < tableCells.length; index += columns) {
-        const row = tableCells.slice(index, index + columns);
-        if (row.length === columns && !row.every((cell) => /^(Hostel|Room type|Price|Distance)$/i.test(cell))) {
-          rows.push(`• ${row.join(" · ")}`);
-        }
-      }
-      line = `${prefix}${rows.length ? `\n${rows.join("\n")}` : ` ${tableCells.join(" · ")}`}`;
+function renderAiInline(value = "") {
+  const parts = String(value).split(/(\*\*[^*]+\*\*|__[^_]+__|`[^`]+`)/g).filter(Boolean);
+  return parts.map((part, index) => {
+    if ((part.startsWith("**") && part.endsWith("**")) || (part.startsWith("__") && part.endsWith("__"))) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
     }
-    line = line
-      .replace(/^#{1,6}\s*/, "")
-      .replace(/\*\*(.*?)\*\*/g, "$1")
-      .replace(/__(.*?)__/g, "$1")
-      .replace(/\*(.*?)\*/g, "$1")
-      .replace(/_(.*?)_/g, "$1")
-      .replace(/^[*-]\s+/, "• ")
-      .replace(/^\d+[.)]\s+/, "• ")
-      .replace(/`([^`]+)`/g, "$1")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-    if (line) cleaned.push(line);
+    if (part.startsWith("`") && part.endsWith("`")) return <code key={index}>{part.slice(1, -1)}</code>;
+    return <span key={index}>{part}</span>;
+  });
+}
+
+function renderAiContent(value = "") {
+  const source = String(value).replace(/```[\w-]*\n?/g, "").replace(/```/g, "");
+  const rawLines = source.split("\n").map((line) => line.trim()).filter(Boolean);
+  const tableLine = rawLines.find((line) => line.includes("|") && line.split("|").length >= 5);
+  const tableIndex = tableLine ? rawLines.indexOf(tableLine) : -1;
+  let tableCells = tableLine ? tableLine.slice(tableLine.indexOf("|")).split("|").map((cell) => cell.trim()).filter(Boolean) : [];
+  tableCells = tableCells.filter((cell) => !/^:?-{2,}:?$/.test(cell));
+  const tableColumns = tableCells.length >= 4 ? 4 : 0;
+  const tableRows = [];
+  if (tableColumns) {
+    for (let index = 0; index + tableColumns <= tableCells.length; index += tableColumns) {
+      tableRows.push(tableCells.slice(index, index + tableColumns));
+    }
   }
-  return cleaned.join("\n");
+  const beforeTable = tableLine ? tableLine.slice(0, tableLine.indexOf("|")).trim() : "";
+  const nodes = [];
+  rawLines.forEach((line, index) => {
+    if (index === tableIndex) {
+      if (beforeTable) nodes.push(<div key={`intro-${index}`}>{renderAiInline(beforeTable)}</div>);
+      if (tableRows.length > 1) {
+        nodes.push(
+          <div key={`table-${index}`} className="my-2 overflow-x-auto rounded-lg" style={{ border: `1px solid ${C.line}` }}>
+            <table className="w-full text-left text-[11px]" style={{ borderCollapse: "collapse" }}>
+              <thead><tr>{tableRows[0].map((cell, cellIndex) => <th key={cellIndex} className="px-2 py-1.5 font-bold" style={{ background: C.mint, borderBottom: `1px solid ${C.line}` }}>{renderAiInline(cell)}</th>)}</tr></thead>
+              <tbody>{tableRows.slice(1).map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={cellIndex} className="px-2 py-1.5" style={{ borderBottom: `1px solid ${C.line}` }}>{renderAiInline(cell)}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+        );
+      }
+      return;
+    }
+    if (tableIndex >= 0 && index > tableIndex && line.includes("|")) return;
+    const cleaned = line.replace(/^#{1,6}\s*/, "").replace(/^[*-]\s+/, "• ").replace(/^\d+[.)]\s+/, "• ");
+    nodes.push(<div key={index}>{renderAiInline(cleaned)}</div>);
+  });
+  return nodes;
 }
 
 function AiScreen({ role }) {
@@ -3417,7 +3426,7 @@ function AiScreen({ role }) {
                   ...fBody,
                 }}
               >
-                <span className="whitespace-pre-line">{formatAiText(m.content)}</span>
+                <div className="space-y-1">{renderAiContent(m.content)}</div>
               </div>
             </div>
           ))}
@@ -3432,7 +3441,7 @@ function AiScreen({ role }) {
                 className="max-w-[78%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed"
                 style={{ background: C.surface, color: C.ink, borderRadius: "18px 18px 18px 4px", border: `1px solid ${C.line}`, ...fBody }}
               >
-                <span className="whitespace-pre-line">{formatAiText(streamText)}</span>
+                <div className="space-y-1">{renderAiContent(streamText)}</div>
                 <span className="inline-block w-1.5 h-3.5 ml-0.5 rounded-sm animate-pulse" style={{ background: C.primary, verticalAlign: "middle" }} />
               </div>
             </div>
