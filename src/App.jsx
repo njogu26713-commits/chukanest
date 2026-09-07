@@ -3321,6 +3321,7 @@ function AiScreen({ role }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [streamText, setStreamText] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState(FALLBACK_SUPPORT_SETTINGS.whatsappNumber);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -3329,6 +3330,20 @@ function AiScreen({ role }) {
   }, [messages, streamText]);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
+
+  useEffect(() => {
+    api.getSupport().then((settings) => {
+      if (settings?.whatsappNumber) setWhatsappNumber(settings.whatsappNumber);
+    }).catch(() => {});
+  }, []);
+
+  const asksForContact = (text = "") => /whatsapp|contact|call|phone|number|message|reach|talk to|speak to/i.test(text);
+  const openWhatsApp = (context = "") => {
+    const number = formatWhatsAppNumber(whatsappNumber);
+    if (!number) return;
+    const message = context ? `Hello ChukaNest, I would like help with: ${context}` : "Hello ChukaNest, I would like help finding a hostel.";
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -3428,6 +3443,15 @@ function AiScreen({ role }) {
               >
                 <div className="space-y-1">{renderAiContent(m.content)}</div>
               </div>
+              {m.role === "assistant" && asksForContact(messages[i - 1]?.content) && (
+                <button
+                  onClick={() => openWhatsApp(messages[i - 1]?.content)}
+                  className="self-end flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold"
+                  style={{ ...fBody, background: "#25D366", color: "#fff", boxShadow: "0 2px 6px rgba(37,211,102,0.25)" }}
+                >
+                  <MessageCircle size={14} /> WhatsApp {whatsappNumber}
+                </button>
+              )}
             </div>
           ))}
 
