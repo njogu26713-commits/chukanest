@@ -3191,7 +3191,7 @@ function FloatingInstallButton({ onInstall }) {
       <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.18)" }}>
         <Download size={16} color="#fff" strokeWidth={2.5} />
       </span>
-      <span>Install ChukaNest</span>
+      <span>Install app</span>
     </button>
   );
 }
