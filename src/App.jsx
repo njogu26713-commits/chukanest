@@ -846,7 +846,7 @@ function AuthScreen({ onAuthed, showToast }) {
 
 /* ---------------------------------- HOME SCREEN ---------------------------------- */
 
-function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser, favIds, onPremiumActivated }) {
+function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser, favIds, onPremiumActivated, onProfile }) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [sortBy, setSortBy] = useState("rating");
@@ -943,9 +943,16 @@ function HomeScreen({ hostels, favs, onToggleFav, onOpen, showToast, currentUser
             <div className="text-[22px] font-extrabold leading-tight" style={{ ...fDisplay, color: C.ink }}>ChukaNest</div>
             <div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>Find verified housing near Chuka University</div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: C.mint }}>
-            <Bell size={18} color={C.primaryDark} />
-          </div>
+          <button
+            onClick={onProfile}
+            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full transition-transform active:scale-90"
+            style={{ background: C.mint, border: `2px solid ${C.primary}33` }}
+            title="Open profile"
+          >
+            {currentUser?.avatarUrl
+              ? <img src={currentUser.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+              : <User size={19} color={C.primaryDark} />}
+          </button>
         </div>
         {/* Search */}
         <div
