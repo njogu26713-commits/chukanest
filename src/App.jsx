@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Pencil, LogOut, Mail, Lock,
   BarChart3, Users, LayoutDashboard, TrendingUp, AlertTriangle, CheckCircle2,
   SlidersHorizontal, ImagePlus, Building2, ArrowLeft, Eye, EyeOff, Flag, Clock,
-  ThumbsUp, MoreVertical, Sparkles, Loader2, Bot, Send, Moon, Sun, Bird
+  ThumbsUp, MoreVertical, Sparkles, Loader2, Bot, Send, Moon, Sun, Bird, Download
 } from "lucide-react";
 import { api, saveAuth, loadAuth, clearAuth } from "./api.js";
 import OwnerPortal from "./OwnerPortal.jsx";
@@ -3180,7 +3180,23 @@ function AdminScreen({ showToast, onHostelSaved }) {
 
 /* ---------------------------------- NAV ---------------------------------- */
 
-function AppNav({ tab, setTab, role, dark, toggleDark }) {
+function InstallButton({ onInstall, compact = false }) {
+  return (
+    <button
+      onClick={onInstall}
+      className={`flex items-center justify-center gap-2 rounded-2xl font-bold text-white transition-all active:scale-[0.98] ${compact ? "px-3 py-2 text-xs" : "w-full px-3 py-3 text-sm"}`}
+      style={{ background: C.primary, boxShadow: "0 5px 14px rgba(27,107,69,0.18)", ...fBody }}
+      title="Install ChukaNest on your device"
+    >
+      <span className="flex h-6 w-6 items-center justify-center rounded-lg" style={{ background: "rgba(255,255,255,0.18)" }}>
+        <Download size={15} color="#fff" strokeWidth={2.5} />
+      </span>
+      <span>Install ChukaNest</span>
+    </button>
+  );
+}
+
+function AppNav({ tab, setTab, role, dark, toggleDark, onInstall }) {
   const tabs = [
     { id: "home",    label: "Home",    icon: Home },
     { id: "map",     label: "Map",     icon: Navigation },
@@ -3223,6 +3239,15 @@ function AppNav({ tab, setTab, role, dark, toggleDark }) {
             : <Moon size={20} color={C.inkSoft} strokeWidth={1.8} />}
           <span className="text-[10px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>{dark ? "Light" : "Dark"}</span>
         </button>
+        <button
+          onClick={onInstall}
+          className="flex flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5"
+          style={{ background: C.primary, minWidth: 56 }}
+          title="Install ChukaNest"
+        >
+          <Download size={19} color="#fff" strokeWidth={2.4} />
+          <span className="text-[10px] font-bold text-white" style={fBody}>Install</span>
+        </button>
       </div>
 
       {/* Desktop sidebar */}
@@ -3235,6 +3260,10 @@ function AppNav({ tab, setTab, role, dark, toggleDark }) {
             <Building2 size={18} color="#fff" />
           </div>
           <span className="text-[17px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>ChukaNest</span>
+        </div>
+
+        <div className="px-3 mb-5">
+          <InstallButton onInstall={onInstall} />
         </div>
 
         <div className="flex flex-col gap-1 flex-1">
@@ -3563,6 +3592,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [hostelLoading, setHostelLoading] = useState(true);
   const [dark, setDark] = useState(() => localStorage.getItem("cn_dark") === "1");
+  const [installPrompt, setInstallPrompt] = useState(null);
   const toastRef = useRef(null);
 
   // Apply theme palette before every render so all children read correct colors
@@ -3583,6 +3613,38 @@ export default function App() {
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
+
+  // Capture the browser's install prompt so the green CTA can install the PWA in one tap.
+  useEffect(() => {
+    const onBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+    };
+    const onInstalled = () => setInstallPrompt(null);
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      await installPrompt.userChoice;
+      setInstallPrompt(null);
+      return;
+    }
+    const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    if (isIos) {
+      showToast("Tap Share, then Add to Home Screen");
+    } else if (window.matchMedia("(display-mode: standalone)").matches) {
+      showToast("ChukaNest is already installed");
+    } else {
+      showToast("Open your browser menu and choose Install app");
+    }
+  };
 
 
   // Fetch hostels when authenticated
@@ -3714,7 +3776,7 @@ export default function App() {
   return (
     <div className="flex h-screen w-full overflow-hidden" style={{ background: C.bg, color: C.ink }}>
       <Toast toast={toast} />
-      <AppNav tab={tab} setTab={setTab} role={role} dark={dark} toggleDark={toggleDark} />
+      <AppNav tab={tab} setTab={setTab} role={role} dark={dark} toggleDark={toggleDark} onInstall={handleInstall} />
 
       <div className="min-w-0 min-h-0 flex-1 overflow-hidden md:ml-[220px]">
         {openHostel ? (
