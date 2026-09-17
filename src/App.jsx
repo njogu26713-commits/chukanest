@@ -529,7 +529,6 @@ function AuthScreen({ onAuthed, showToast }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [adminCode, setAdminCode] = useState("");
-  const [showAdminCode, setShowAdminCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
@@ -657,7 +656,7 @@ function AuthScreen({ onAuthed, showToast }) {
           {["login", "signup"].map((m) => (
             <button
               key={m}
-              onClick={() => { setMode(m); setError(""); setAdminCode(""); setShowAdminCode(false); }}
+              onClick={() => { setMode(m); setError(""); setAdminCode(""); }}
               className="flex-1 rounded-xl py-2 text-sm font-semibold transition-all"
               style={{ ...fBody, background: mode === m ? C.surface : "transparent", color: mode === m ? C.primaryDark : C.inkSoft, boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}
             >
@@ -709,31 +708,6 @@ function AuthScreen({ onAuthed, showToast }) {
             <button onClick={() => setShowPw((s) => !s)}>{showPw ? <EyeOff size={16} color={C.inkSoft} /> : <Eye size={16} color={C.inkSoft} />}</button>
           </div>
 
-          {/* Admin invite code — shown on signup when toggled */}
-          {mode === "signup" && (
-            <div style={{ animation: "cn-field-in 0.35s 0.18s ease both" }}>
-              <button
-                type="button"
-                onClick={() => { setShowAdminCode((s) => !s); setAdminCode(""); }}
-                className="text-[11px] font-medium"
-                style={{ ...fBody, color: C.inkSoft }}
-              >
-                {showAdminCode ? "▲ Hide admin code" : "▾ Register as admin?"}
-              </button>
-              {showAdminCode && (
-                <div className="cn-auth-input-wrap mt-2 flex items-center gap-2 rounded-2xl px-3.5 py-3" style={{ background: C.goldSoft, border: `1px solid ${C.gold}`, animation: "cn-field-in 0.3s ease both" }}>
-                  <ShieldCheck size={16} color={C.gold} />
-                  <input
-                    value={adminCode}
-                    onChange={(e) => setAdminCode(e.target.value)}
-                    placeholder="Admin invite code"
-                    className="w-full bg-transparent text-sm outline-none"
-                    style={{ ...fBody, color: C.ink }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {error && (
