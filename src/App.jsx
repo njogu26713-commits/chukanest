@@ -3180,23 +3180,23 @@ function AdminScreen({ showToast, onHostelSaved }) {
 
 /* ---------------------------------- NAV ---------------------------------- */
 
-function InstallButton({ onInstall, compact = false }) {
+function FloatingInstallButton({ onInstall }) {
   return (
     <button
       onClick={onInstall}
-      className={`flex items-center justify-center gap-2 rounded-2xl font-bold text-white transition-all active:scale-[0.98] ${compact ? "px-3 py-2 text-xs" : "w-full px-3 py-3 text-sm"}`}
-      style={{ background: C.primary, boxShadow: "0 5px 14px rgba(27,107,69,0.18)", ...fBody }}
+      className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full px-4 py-3 font-bold text-white transition-all active:scale-[0.97] md:bottom-6 md:right-6"
+      style={{ background: C.primary, boxShadow: "0 10px 24px rgba(27,107,69,0.28)", ...fBody }}
       title="Install ChukaNest on your device"
     >
-      <span className="flex h-6 w-6 items-center justify-center rounded-lg" style={{ background: "rgba(255,255,255,0.18)" }}>
-        <Download size={15} color="#fff" strokeWidth={2.5} />
+      <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.18)" }}>
+        <Download size={16} color="#fff" strokeWidth={2.5} />
       </span>
       <span>Install ChukaNest</span>
     </button>
   );
 }
 
-function AppNav({ tab, setTab, role, dark, toggleDark, onInstall }) {
+function AppNav({ tab, setTab, role, dark, toggleDark }) {
   const tabs = [
     { id: "home",    label: "Home",    icon: Home },
     { id: "map",     label: "Map",     icon: Navigation },
@@ -3239,15 +3239,6 @@ function AppNav({ tab, setTab, role, dark, toggleDark, onInstall }) {
             : <Moon size={20} color={C.inkSoft} strokeWidth={1.8} />}
           <span className="text-[10px] font-semibold" style={{ ...fBody, color: C.inkSoft }}>{dark ? "Light" : "Dark"}</span>
         </button>
-        <button
-          onClick={onInstall}
-          className="flex flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5"
-          style={{ background: C.primary, minWidth: 56 }}
-          title="Install ChukaNest"
-        >
-          <Download size={19} color="#fff" strokeWidth={2.4} />
-          <span className="text-[10px] font-bold text-white" style={fBody}>Install</span>
-        </button>
       </div>
 
       {/* Desktop sidebar */}
@@ -3260,10 +3251,6 @@ function AppNav({ tab, setTab, role, dark, toggleDark, onInstall }) {
             <Building2 size={18} color="#fff" />
           </div>
           <span className="text-[17px] font-extrabold" style={{ ...fDisplay, color: C.ink }}>ChukaNest</span>
-        </div>
-
-        <div className="px-3 mb-5">
-          <InstallButton onInstall={onInstall} />
         </div>
 
         <div className="flex flex-col gap-1 flex-1">
@@ -3755,6 +3742,7 @@ export default function App() {
     return (
       <div className="min-h-screen w-full" style={{ background: C.bg, color: C.ink }}>
         <OwnerPortal currentUser={currentUser} onAuthed={handleAuthed} onLogout={handleLogout} showToast={showToast} />
+        <FloatingInstallButton onInstall={handleInstall} />
       </div>
     );
   }
@@ -3769,6 +3757,7 @@ export default function App() {
         <div className="hidden md:block h-full">
           <AuthScreen onAuthed={handleAuthed} showToast={showToast} />
         </div>
+        <FloatingInstallButton onInstall={handleInstall} />
       </div>
     );
   }
@@ -3776,7 +3765,8 @@ export default function App() {
   return (
     <div className="flex h-screen w-full overflow-hidden" style={{ background: C.bg, color: C.ink }}>
       <Toast toast={toast} />
-      <AppNav tab={tab} setTab={setTab} role={role} dark={dark} toggleDark={toggleDark} onInstall={handleInstall} />
+      <AppNav tab={tab} setTab={setTab} role={role} dark={dark} toggleDark={toggleDark} />
+      <FloatingInstallButton onInstall={handleInstall} />
 
       <div className="min-w-0 min-h-0 flex-1 overflow-hidden md:ml-[220px]">
         {openHostel ? (
