@@ -3498,7 +3498,7 @@ function AiScreen({ role }) {
           </div>
           <div>
             <div className="text-[16px] font-bold text-white" style={fDisplay}>ChukaNest AI</div>
-            <div className="text-[11px] text-white/70" style={fBody}>Powered by Groq · GPT-OSS</div>
+            <div className="text-[11px] text-white/70" style={fBody}>Powered by ChatGPT · Astra</div>
           </div>
         </div>
 
