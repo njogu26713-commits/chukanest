@@ -3254,7 +3254,7 @@ function AppNav({ tab, setTab, role, dark, toggleDark }) {
     { id: "favs",    label: "Saved",   icon: Heart },
     { id: "ai",      label: "Ask AI",  icon: Bot },
     ...(role === "admin" ? [{ id: "admin", label: "Admin", icon: LayoutDashboard }] : []),
-    { id: "profile", label: "Profile", icon: User },
+    { id: "support", label: "Support", icon: MessageCircle },
   ];
 
   return (
@@ -3865,7 +3865,7 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <HomeScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} currentUser={currentUser} favIds={[...favs]} onPremiumActivated={handlePremiumActivated} />
+                <HomeScreen hostels={hostels} favs={favs} onToggleFav={toggleFav} onOpen={setOpenHostelId} showToast={showToast} currentUser={currentUser} favIds={[...favs]} onPremiumActivated={handlePremiumActivated} onProfile={() => setTab("profile")} />
               )
             )}
             {tab === "map" && <MapScreen hostels={hostels} onOpen={(id) => setOpenHostelId(id)} />}
