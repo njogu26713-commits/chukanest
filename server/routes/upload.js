@@ -47,7 +47,7 @@ try {
 // Keep files in memory briefly while Cloudinary stores them permanently.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024, files: 10, fields: 20, parts: 32 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) cb(null, true);
     else cb(new Error("Only image and video files are allowed"));
@@ -56,7 +56,7 @@ const upload = multer({
 
 const profileUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 10, parts: 12 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith("image/")) cb(null, true);
     else cb(new Error("Profile pictures must be image files"));

@@ -1,10 +1,21 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
+import { JWT_SECRET } from "../security.js";
 
 const router = Router();
-const JWT_SECRET = process.env.SESSION_SECRET || "dev-secret";
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Too many authentication attempts. Please try again later." },
+});
+
+const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+const validPassword = (value) => typeof value === "string" && value.length >= 8 && value.length <= 128;
 
 function signToken(user) {
   return jwt.sign(
@@ -37,13 +48,17 @@ router.get("/config", (_req, res) => {
 });
 
 // POST /api/auth/signup
-router.post("/signup", async (req, res) => {
+router.post("/signup", authLimiter, async (req, res) => {
   try {
     const { name, email, password, adminCode } = req.body;
-    if (!name || !email || !password)
+    if (!name || !email || !validPassword(password))
       return res.status(400).json({ error: "Name, email and password are required" });
 
-    const existing = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = normalizeEmail(email);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ error: "Enter a valid email address" });
+    }
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) return res.status(409).json({ error: "Email already registered" });
 
     // Determine role from admin invite code
@@ -55,7 +70,7 @@ router.post("/signup", async (req, res) => {
       role = "admin";
     }
 
-    const user = await User.create({ name, email, password, role, provider: "local" });
+    const user = await User.create({ name: String(name).trim().slice(0, 120), email: normalizedEmail, password, role, provider: "local" });
     const token = signToken(user);
     res.json({ token, user: userPayload(user) });
   } catch (err) {
@@ -64,14 +79,17 @@ router.post("/signup", async (req, res) => {
 });
 
 // POST /api/auth/owner/signup — owner accounts are created only from the private owner portal.
-router.post("/owner/signup", async (req, res) => {
+router.post("/owner/signup", authLimiter, async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
-    if (!name || !email || !password || !phone) {
+    if (!name || !validPassword(password) || !phone) {
       return res.status(400).json({ error: "Name, email, password and M-Pesa phone are required" });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ error: "Enter a valid email address" });
+    }
     const existing = await User.findOne({ email: normalizedEmail });
     if (existing) return res.status(409).json({ error: "Email already registered" });
 
@@ -91,7 +109,7 @@ router.post("/owner/signup", async (req, res) => {
 });
 
 // POST /api/auth/owner/login — owner-only login for the /owner portal.
-router.post("/owner/login", async (req, res) => {
+router.post("/owner/login", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: "Email and password are required" });
@@ -113,13 +131,13 @@ router.post("/owner/login", async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password)
       return res.status(400).json({ error: "Email and password are required" });
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: normalizeEmail(email) });
     if (!user) return res.status(401).json({ error: "Invalid email or password" });
 
     if (user.provider === "google" && !user.password) {
@@ -137,7 +155,7 @@ router.post("/login", async (req, res) => {
 });
 
 // POST /api/auth/google — verify Google access token and sign in / create user
-router.post("/google", async (req, res) => {
+router.post("/google", authLimiter, async (req, res) => {
   try {
     const { credential, adminCode } = req.body;
     if (!credential) return res.status(400).json({ error: "Google credential is required" });

@@ -727,9 +727,6 @@ function AuthScreen({ onAuthed, showToast }) {
           </button>
         </div>
 
-        <button onClick={() => { showToast("Continuing as guest"); onAuthed("guest", null); }} className="mt-4 w-full text-center text-[13px] font-semibold" style={{ ...fBody, color: C.primaryDark, animation: "cn-auth-up 0.5s 0.48s ease both" }}>
-          Continue as guest →
-        </button>
       </div>
 
       <div className="mt-5 flex items-center justify-center gap-1.5 text-[12px]" style={{ ...fBody, color: C.inkSoft, animation: "cn-auth-up 0.5s 0.55s ease both" }}>

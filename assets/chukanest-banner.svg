@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">ChukaNest — verified student housing</title>
+  <desc id="desc">A green and gold branded banner for ChukaNest, a hostel finder for Chuka University students.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07130d"/>
+      <stop offset="0.52" stop-color="#10291c"/>
+      <stop offset="1" stop-color="#07130d"/>
+    </linearGradient>
+    <linearGradient id="wordmark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e9c94a"/>
+      <stop offset="0.45" stop-color="#67c98c"/>
+      <stop offset="1" stop-color="#bfe8c9"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M 42 0 L 0 0 0 42" fill="none" stroke="#8bd3a4" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="360" rx="18" fill="url(#bg)"/>
+  <rect x="1" y="1" width="1198" height="358" rx="17" fill="url(#grid)" stroke="#294b38" stroke-width="2"/>
+  <circle cx="105" cy="96" r="78" fill="#2f8f5e" fill-opacity="0.18" filter="url(#glow)"/>
+  <circle cx="1105" cy="278" r="100" fill="#c9a227" fill-opacity="0.10" filter="url(#glow)"/>
+  <g transform="translate(72 68)" filter="url(#glow)">
+    <path d="M0 61 48 17l48 44v58H0Z" fill="#2f8f5e" stroke="#d9c04b" stroke-width="5"/>
+    <path d="m-10 62 58-52 58 52" fill="none" stroke="#e8d36b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M37 119V79h22v40M68 119V79h22v40" fill="#e7f3ec"/>
+    <path d="M30 136h36" stroke="#e8d36b" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <text x="250" y="152" fill="url(#wordmark)" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="800" letter-spacing="2">CHUKANEST</text>
+  <text x="254" y="204" fill="#d8e9dc" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" letter-spacing="8">VERIFIED STUDENT HOUSING</text>
+  <line x1="254" y1="238" x2="946" y2="238" stroke="#c9a227" stroke-opacity="0.7"/>
+  <text x="600" y="285" text-anchor="middle" fill="#eef8f0" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="600">Find your home near campus.</text>
+  <circle cx="254" cy="280" r="4" fill="#c9a227"/>
+  <circle cx="946" cy="280" r="4" fill="#c9a227"/>
+</svg>

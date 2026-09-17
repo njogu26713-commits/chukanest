@@ -22,7 +22,9 @@ function darajaConfigured() {
 }
 
 function temporaryPaymentMode() {
-  return process.env.MPESA_TEMPORARY_MODE !== "false";
+  // Temporary entitlement grants must always be explicitly enabled and are never
+  // allowed to activate implicitly on a production deployment.
+  return process.env.MPESA_TEMPORARY_MODE === "true";
 }
 
 async function darajaToken() {
@@ -197,6 +199,9 @@ router.post("/callback", async (req, res) => {
     const value = (name) => items.find((item) => item.Name === name)?.Value;
     const payment = await Payment.findOne({ checkoutRequestId: callback.CheckoutRequestID });
     if (payment) {
+      if (payment.status === "completed" || payment.status === "failed") {
+        return res.json({ ResultCode: 0, ResultDesc: "Accepted" });
+      }
       payment.status = Number(callback.ResultCode) === 0 ? "completed" : "failed";
       payment.resultCode = Number(callback.ResultCode);
       payment.resultDescription = callback.ResultDesc;

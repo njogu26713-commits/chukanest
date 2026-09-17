@@ -1,8 +1,17 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import Hostel from "../models/Hostel.js";
 import Review from "../models/Review.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Too many AI requests. Please try again later." },
+});
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 // Groq retired the previous Llama model IDs on 16 August 2026.
@@ -45,7 +54,7 @@ async function groq(model, messages, { json = false } = {}) {
    Body: { query: "quiet female hostel under 6k" }
    Returns structured filters + a human-readable interpretation
 ───────────────────────────────────────────────────────────── */
-router.post("/search", async (req, res) => {
+router.post("/search", requireAuth, aiLimiter, async (req, res) => {
   try {
     const { query } = req.body;
     if (!query?.trim()) return res.status(400).json({ error: "query is required" });
@@ -84,7 +93,7 @@ Examples:
    POST /api/ai/summarize/:hostelId
    Summarises reviews for a hostel in 1-2 sentences
 ───────────────────────────────────────────────────────────── */
-router.post("/summarize/:hostelId", async (req, res) => {
+router.post("/summarize/:hostelId", requireAuth, aiLimiter, async (req, res) => {
   try {
     const reviews = await Review.find({ hostelId: req.params.hostelId, flagged: false })
       .select("user rating text")
@@ -121,7 +130,7 @@ router.post("/summarize/:hostelId", async (req, res) => {
    Body: { bookmarkedIds: [...], budget: number | null }
    Returns up to 3 recommended hostels with a reason each
 ───────────────────────────────────────────────────────────── */
-router.post("/recommend", async (req, res) => {
+router.post("/recommend", requireAuth, aiLimiter, async (req, res) => {
   try {
     const { bookmarkedIds = [], budget = null } = req.body;
 
@@ -182,7 +191,7 @@ Pick hostels that match the student's budget and are highly rated. Avoid already
    Body: { messages: [{role, content}] }
    Streams an SSE response from Groq with hostel context injected
 ───────────────────────────────────────────────────────────── */
-router.post("/chat", async (req, res) => {
+router.post("/chat", requireAuth, aiLimiter, async (req, res) => {
   try {
     if (!process.env.GROQ_API_KEY?.trim()) {
       return res.status(503).json({ error: "GROQ_API_KEY is not configured on the backend" });

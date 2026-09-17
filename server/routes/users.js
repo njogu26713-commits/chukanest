@@ -29,7 +29,10 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
 // PATCH /api/users/:id — admin only (suspend/unsuspend)
 router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).select("-password");
+    const updates = {};
+    if (["active", "flagged", "suspended"].includes(req.body?.status)) updates.status = req.body.status;
+    if (Object.keys(updates).length === 0) return res.status(400).json({ error: "No valid user fields to update" });
+    const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true }).select("-password -googleId");
     if (!user) return res.status(404).json({ error: "Not found" });
     res.json(user);
   } catch (err) {

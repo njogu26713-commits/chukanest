@@ -45,6 +45,7 @@ Add these variables to the Railway service before deploying:
 | `CLOUDINARY_API_KEY` | Yes for uploads | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Yes for uploads | Cloudinary API secret |
 | `VITE_API_URL` | Only when frontend and backend are separate | Public backend URL ending in `/api`; set it before the frontend build |
+| `CORS_ORIGINS` | No for same-origin hosting | Comma-separated browser origins allowed to call the API in production |
 
 The first server start seeds the MongoDB database when the `hostels` collection is empty.
 
@@ -66,7 +67,8 @@ The first server start seeds the MongoDB database when the `hostels` collection 
 | `MPESA_PASSKEY` | Daraja Lipa na M-Pesa passkey |
 | `MPESA_CALLBACK_URL` | Public HTTPS URL ending in `/api/payments/callback`; required to activate live owner subscriptions after STK payment |
 | `MPESA_ENV` | `sandbox` (default) or `production` |
-| `MPESA_TEMPORARY_MODE` | Temporary testing mode; defaults to enabled when Daraja is not configured. Set to `false` to require live M-Pesa. |
+| `MPESA_TEMPORARY_MODE` | Set explicitly to `true` only for local testing; live deployments require configured Daraja credentials. |
+| `CORS_ORIGINS` | Comma-separated browser origins allowed to call the API in production; leave unset for same-origin hosting. |
 
 ## Project structure
 

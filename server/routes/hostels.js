@@ -5,6 +5,18 @@ import { requireAuth, requireAdmin, optionalAuth } from "../middleware/auth.js";
 
 const router = Router();
 
+const ADMIN_HOSTEL_FIELDS = [
+  "name", "location", "roomType", "price", "billingPeriod", "distance", "rating",
+  "reviewCount", "verified", "accessLevel", "status", "availableRooms", "contactRole",
+  "phone", "images", "amenities", "description", "rules", "latlng",
+];
+
+function pickAdminHostel(body = {}) {
+  return Object.fromEntries(ADMIN_HOSTEL_FIELDS
+    .filter((field) => body[field] !== undefined)
+    .map((field) => [field, body[field]]));
+}
+
 async function hasPremiumAccess(req) {
   if (req.user?.role === "admin") return true;
   if (!req.user?.id) return false;
@@ -79,7 +91,7 @@ router.get("/:id", optionalAuth, async (req, res) => {
 // POST /api/hostels — admin only
 router.post("/", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const hostel = await Hostel.create(req.body);
+    const hostel = await Hostel.create(pickAdminHostel(req.body));
     res.status(201).json(hostel);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -89,7 +101,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
 // PATCH /api/hostels/:id — admin only
 router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const hostel = await Hostel.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const hostel = await Hostel.findByIdAndUpdate(req.params.id, pickAdminHostel(req.body), { new: true, runValidators: true });
     if (!hostel) return res.status(404).json({ error: "Not found" });
     res.json(hostel);
   } catch (err) {

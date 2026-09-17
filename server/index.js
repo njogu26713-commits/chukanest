@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { connectDB } from "./db.js";
@@ -16,8 +18,39 @@ import paymentRoutes from "./routes/payments.js";
 import ownerRoutes from "./routes/owners.js";
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.disable("x-powered-by");
+app.set("trust proxy", 1);
+
+const configuredOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({
+  origin(origin, callback) {
+    // Non-browser tools and same-origin server requests have no Origin header.
+    if (!origin) return callback(null, true);
+    if (configuredOrigins.includes(origin)) return callback(null, true);
+    if (process.env.NODE_ENV !== "production" && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error("Origin is not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false, limit: "100kb" }));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again later." },
+});
+app.use("/api", apiLimiter);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../dist");
@@ -57,10 +90,10 @@ app.use((err, req, res, next) => {
   if (!req.path.startsWith("/api/")) return next(err);
 
   console.error("API request failed:", err);
-  const status = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
-  const error = err.code === "LIMIT_FILE_SIZE"
-    ? "The uploaded file is too large. Maximum size is 100 MB."
-    : err.message || "API request failed";
+  const status = err.code === "LIMIT_FILE_SIZE" || err.type === "entity.too.large" ? 413 : 400;
+  const error = err.code === "LIMIT_FILE_SIZE" || err.type === "entity.too.large"
+    ? "The uploaded file is too large. Maximum size is 50 MB."
+    : process.env.NODE_ENV === "production" ? "API request failed" : err.message || "API request failed";
   res.status(status).json({ error });
 });
 
