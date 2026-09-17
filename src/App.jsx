@@ -1822,10 +1822,30 @@ function SupportScreen({ showToast, onBack, currentUser }) {
 
 /* ---------------------------------- PROFILE SCREEN ---------------------------------- */
 
-function ProfileScreen({ role, currentUser, onLogout, showToast, onOpenSupport }) {
+function ProfileScreen({ role, currentUser, onLogout, showToast, onOpenSupport, onUserUpdated }) {
   const [open, setOpen] = useState(null); // which panel is expanded
   const [myReviews, setMyReviews] = useState(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef(null);
+
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { showToast("Choose an image file"); return; }
+    if (file.size > 5 * 1024 * 1024) { showToast("Profile pictures must be under 5 MB"); return; }
+    setAvatarUploading(true);
+    try {
+      const result = await api.uploadProfileImage(file);
+      onUserUpdated?.(result.user);
+      showToast("Profile picture updated");
+    } catch (error) {
+      showToast(error.message || "Could not update profile picture");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const toggle = (id) => {
     const next = open === id ? null : id;
@@ -1884,9 +1904,26 @@ function ProfileScreen({ role, currentUser, onLogout, showToast, onOpenSupport }
 
         {/* Avatar card */}
         <div className="flex flex-col items-center py-6 rounded-3xl" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl mb-3" style={{ background: C.mint }}>
-            <User size={30} color={C.primaryDark} />
+          <div className="relative mb-3">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full" style={{ background: C.mint, border: `3px solid ${C.surface}`, boxShadow: `0 0 0 2px ${C.primary}33` }}>
+              {currentUser?.avatarUrl
+                ? <img src={currentUser.avatarUrl} alt={`${currentUser.name || "User"} profile`} className="h-full w-full object-cover" />
+                : <User size={32} color={C.primaryDark} />}
+            </div>
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-95 disabled:opacity-60"
+              style={{ background: C.primary, border: `2px solid ${C.surface}` }}
+              title="Change profile picture"
+            >
+              {avatarUploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+            </button>
+            <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           </div>
+          <button onClick={() => avatarInputRef.current?.click()} disabled={avatarUploading} className="mb-2 text-[12px] font-semibold" style={{ ...fBody, color: C.primaryDark }}>
+            {avatarUploading ? "Uploading…" : "Change profile picture"}
+          </button>
           <div className="text-[17px] font-bold" style={{ ...fDisplay, color: C.ink }}>
             {currentUser?.name || "Guest"}
           </div>
@@ -3663,6 +3700,12 @@ export default function App() {
     setTab("home");
   };
 
+  const handleUserUpdated = (user) => {
+    setCurrentUser(user);
+    const auth = loadAuth();
+    if (auth) saveAuth(auth.token, user);
+  };
+
   const handleAdminHostelSaved = (saved, isEdit) => {
     setHostels((prev) => {
       if (saved.status !== "active") {
@@ -3800,7 +3843,7 @@ export default function App() {
             {tab === "ai" && <AiScreen role={role} />}
             {tab === "admin" && role === "admin" && <AdminScreen showToast={showToast} onHostelSaved={handleAdminHostelSaved} />}
             {tab === "support" && <SupportScreen showToast={showToast} onBack={() => setTab("profile")} currentUser={currentUser} />}
-            {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} onOpenSupport={() => setTab("support")} />}
+            {tab === "profile" && <ProfileScreen role={role} currentUser={currentUser} onLogout={handleLogout} showToast={showToast} onOpenSupport={() => setTab("support")} onUserUpdated={handleUserUpdated} />}
           </div>
         )}
       </div>

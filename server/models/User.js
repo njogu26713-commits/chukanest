@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, default: null },          // null for Google-only accounts
     googleId: { type: String, sparse: true, default: null },
     provider: { type: String, enum: ["local", "google"], default: "local" },
+    avatarUrl: { type: String, default: "" },
     role: { type: String, enum: ["student", "owner", "admin"], default: "student" },
     bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Hostel" }],
     premiumUntil: { type: Date, default: null },

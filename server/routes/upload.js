@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { requireAuth, requireAdminOrOwner } from "../middleware/auth.js";
+import User from "../models/User.js";
 
 // The Cloudinary SDK validates CLOUDINARY_URL while it is imported. Railway
 // deployments with a malformed value would therefore crash before Express
@@ -53,16 +54,48 @@ const upload = multer({
   },
 });
 
-function uploadToCloudinary(file) {
+const profileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Profile pictures must be image files"));
+  },
+});
+
+function uploadToCloudinary(file, folder = "chukanest/hostels") {
   return new Promise((resolve, reject) => {
     const resourceType = file.mimetype.startsWith("video/") ? "video" : "image";
     const stream = cloudinary.uploader.upload_stream(
-      { folder: "chukanest/hostels", resource_type: resourceType, use_filename: true, unique_filename: true },
+      { folder, resource_type: resourceType, use_filename: true, unique_filename: true },
       (error, result) => error ? reject(error) : resolve(result.secure_url)
     );
     stream.end(file.buffer);
   });
 }
+
+// POST /api/upload/profile — upload and save the signed-in user's profile picture
+router.post("/profile", requireAuth, profileUpload.single("image"), async (req, res) => {
+  if (!hasCloudinaryConfig) {
+    return res.status(503).json({ error: "Image storage is not configured on the backend." });
+  }
+  if (!req.file) return res.status(400).json({ error: "Choose an image to upload" });
+
+  try {
+    const avatarUrl = await uploadToCloudinary(req.file, "chukanest/profiles");
+    const user = await User.findByIdAndUpdate(req.user.id, { avatarUrl }, { new: true }).select("-password");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json({ avatarUrl, user: {
+      id: user._id, name: user.name, email: user.email, role: user.role,
+      provider: user.provider, avatarUrl: user.avatarUrl || "",
+      premiumUntil: user.premiumUntil || null, ownerSubscriptionUntil: user.ownerSubscriptionUntil || null,
+      phone: user.phone || "",
+    } });
+  } catch (err) {
+    console.error("Profile image upload failed:", err?.message || err);
+    res.status(502).json({ error: err?.error?.message || "Profile image upload failed" });
+  }
+});
 
 // POST /api/upload/images — upload up to 10 images/videos to durable cloud storage
 router.post("/images", requireAuth, requireAdminOrOwner, upload.array("images", 10), async (req, res) => {

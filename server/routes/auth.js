@@ -21,6 +21,7 @@ function userPayload(user) {
     email: user.email,
     role: user.role,
     provider: user.provider,
+    avatarUrl: user.avatarUrl || "",
     premiumUntil: user.premiumUntil || null,
     ownerSubscriptionUntil: user.ownerSubscriptionUntil || null,
     phone: user.phone || "",

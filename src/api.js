@@ -106,6 +106,19 @@ export const api = {
     if (!Array.isArray(data?.urls)) throw new Error("The upload API returned no image URLs.");
     return data.urls; // string[]
   },
+  uploadProfileImage: async (file) => {
+    const fd = new FormData();
+    fd.append("image", file);
+    const endpoint = `${BASE}/upload/profile`;
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { Accept: "application/json", ...authHeaders() },
+      body: fd,
+    });
+    const data = await parseResponse(res, endpoint);
+    if (!res.ok) throw new Error(data?.error || `Profile image upload failed (HTTP ${res.status}).`);
+    return data;
+  },
 
   // Users
   getUsers: () => req("GET", "/users").then(normArr),
