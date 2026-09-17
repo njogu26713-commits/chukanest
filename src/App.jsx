@@ -3612,6 +3612,7 @@ function AiScreen({ role }) {
 /* ---------------------------------- APP ROOT ---------------------------------- */
 
 export default function App() {
+  const isStandalone = () => window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
   const [role, setRole] = useState(() => { const s = loadAuth(); return s?.user?.role ?? null; });
   const [currentUser, setCurrentUser] = useState(() => { const s = loadAuth(); return s?.user ?? null; });
   const ownerPath = window.location.pathname === "/owner" || window.location.pathname.startsWith("/owner/");
@@ -3624,7 +3625,7 @@ export default function App() {
   const [hostelLoading, setHostelLoading] = useState(true);
   const [dark, setDark] = useState(() => localStorage.getItem("cn_dark") === "1");
   const [installPrompt, setInstallPrompt] = useState(null);
-  const [appInstalled, setAppInstalled] = useState(() => window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true);
+  const [appInstalled, setAppInstalled] = useState(() => localStorage.getItem("cn_app_installed") === "1" || isStandalone());
   const toastRef = useRef(null);
 
   // Apply theme palette before every render so all children read correct colors
@@ -3652,15 +3653,22 @@ export default function App() {
       event.preventDefault();
       setInstallPrompt(event);
     };
-    const onInstalled = () => {
+    const markInstalled = () => {
       setInstallPrompt(null);
       setAppInstalled(true);
+      localStorage.setItem("cn_app_installed", "1");
+    };
+    const onInstalled = () => markInstalled();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible" && isStandalone()) markInstalled();
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
     window.addEventListener("appinstalled", onInstalled);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       window.removeEventListener("appinstalled", onInstalled);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
@@ -3669,7 +3677,10 @@ export default function App() {
       installPrompt.prompt();
       const choice = await installPrompt.userChoice;
       setInstallPrompt(null);
-      if (choice?.outcome === "accepted") setAppInstalled(true);
+      if (choice?.outcome === "accepted") {
+        setAppInstalled(true);
+        localStorage.setItem("cn_app_installed", "1");
+      }
       return;
     }
     const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
