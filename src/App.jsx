@@ -2607,6 +2607,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
   const [flagged, setFlagged] = useState([]);
   const [users, setUsers] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [enquiries, setEnquiries] = useState({ months: [], total: 0 });
   const [supportSettings, setSupportSettings] = useState(FALLBACK_SUPPORT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [hostelModal, setHostelModal] = useState(null); // null | { hostel: null } | { hostel: <obj> }
@@ -2617,13 +2618,14 @@ function AdminScreen({ showToast, onHostelSaved }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const [active, pending, flaggedRevs, userList, support, paymentList] = await Promise.all([
+        const [active, pending, flaggedRevs, userList, support, paymentList, enquiryData] = await Promise.all([
           api.getHostels("active"),
           api.getHostels("pending"),
           api.getFlaggedReviews(),
           api.getUsers(),
           api.getSupport(),
           api.getPayments(),
+          api.getMonthlyEnquiries(),
         ]);
         setListings(active);
         setPendingVerifications(pending);
@@ -2631,6 +2633,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
         setUsers(userList);
         setSupportSettings(normalizeSupportSettings(support));
         setPayments(paymentList);
+        setEnquiries(enquiryData || { months: [], total: 0 });
       } catch (err) {
         showToast("Failed to load admin data");
       } finally {
@@ -2643,13 +2646,8 @@ function AdminScreen({ showToast, onHostelSaved }) {
   const verifiedCount = listings.filter((h) => h.verified).length;
   const totalRooms = listings.reduce((s, h) => s + h.availableRooms, 0);
 
-  // Dummy enquiry data for chart (would be real in a full analytics implementation)
-  const MONTHLY_ENQUIRIES = [
-    { month: "Feb", count: 18 }, { month: "Mar", count: 27 },
-    { month: "Apr", count: 35 }, { month: "May", count: 52 },
-    { month: "Jun", count: 44 }, { month: "Jul", count: 61 },
-  ];
-  const maxEnquiry = Math.max(...MONTHLY_ENQUIRIES.map((m) => m.count));
+  const MONTHLY_ENQUIRIES = enquiries.months || [];
+  const maxEnquiry = Math.max(1, ...MONTHLY_ENQUIRIES.map((m) => m.count));
 
   const TABS = [
     { id: "overview",      label: "Overview",  icon: LayoutDashboard },
@@ -2727,18 +2725,27 @@ function AdminScreen({ showToast, onHostelSaved }) {
               ))}
             </div>
 
-            {/* Enquiry chart */}
+            {/* Real enquiry chart */}
             <div className="rounded-2xl p-4" style={{ background: C.surface, border: `1px solid ${C.line}` }}>
-              <div className="text-[13px] font-bold mb-4" style={{ ...fDisplay, color: C.ink }}>Monthly Enquiries</div>
-              <div className="flex items-end gap-2" style={{ height: 100 }}>
-                {MONTHLY_ENQUIRIES.map(({ month, count }) => (
-                  <div key={month} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="text-[10px] font-semibold" style={{ ...fMono, color: C.primary }}>{count}</div>
-                    <div className="w-full rounded-t-lg transition-all" style={{ height: `${(count / maxEnquiry) * 80}px`, background: C.primary, opacity: 0.85 }} />
-                    <div className="text-[10px]" style={{ ...fBody, color: C.inkSoft }}>{month}</div>
-                  </div>
-                ))}
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <div className="text-[13px] font-bold" style={{ ...fDisplay, color: C.ink }}>Monthly Enquiries</div>
+                <div className="text-[11px]" style={{ ...fBody, color: C.inkSoft }}>Since Aug 2026 · {enquiries.total} total</div>
               </div>
+              {MONTHLY_ENQUIRIES.length === 0 ? (
+                <div className="flex h-20 items-center justify-center rounded-xl" style={{ background: C.bg, color: C.inkSoft, ...fBody, fontSize: 12 }}>
+                  No enquiries recorded yet
+                </div>
+              ) : (
+                <div className="flex items-end gap-2" style={{ height: 100 }}>
+                  {MONTHLY_ENQUIRIES.map(({ month, year, count }) => (
+                    <div key={`${year}-${month}`} className="flex-1 flex flex-col items-center gap-1">
+                      <div className="text-[10px] font-semibold" style={{ ...fMono, color: C.primary }}>{count}</div>
+                      <div className="w-full rounded-t-lg transition-all" style={{ height: `${(count / maxEnquiry) * 80}px`, background: C.primary, opacity: 0.85 }} />
+                      <div className="text-[10px]" style={{ ...fBody, color: C.inkSoft }}>{month}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Quick alerts */}

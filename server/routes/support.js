@@ -42,6 +42,33 @@ router.post("/contact", async (req, res) => {
   }
 });
 
+// GET /api/support/enquiries — real monthly contact enquiries from the product launch
+router.get("/enquiries", requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const start = new Date(Date.UTC(2026, 7, 1)); // August 2026 launch
+    const now = new Date();
+    const grouped = await ContactMessage.aggregate([
+      { $match: { createdAt: { $gte: start, $lte: now } } },
+      { $group: { _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } }, count: { $sum: 1 } } },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+    const counts = new Map(grouped.map((row) => [`${row._id.year}-${row._id.month}`, row.count]));
+    const months = [];
+    for (let cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)); cursor <= now; cursor.setUTCMonth(cursor.getUTCMonth() + 1)) {
+      const year = cursor.getUTCFullYear();
+      const month = cursor.getUTCMonth() + 1;
+      months.push({
+        month: cursor.toLocaleString("en-US", { month: "short", timeZone: "UTC" }),
+        year,
+        count: counts.get(`${year}-${month}`) || 0,
+      });
+    }
+    res.json({ startDate: start.toISOString(), months, total: months.reduce((sum, month) => sum + month.count, 0) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PATCH /api/support — admin-only support content management
 router.patch("/", requireAuth, requireAdmin, async (req, res) => {
   try {

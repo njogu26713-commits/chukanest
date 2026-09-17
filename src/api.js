@@ -85,6 +85,7 @@ export const api = {
 
   // Support
   getSupport: () => req("GET", "/support"),
+  getMonthlyEnquiries: () => req("GET", "/support/enquiries"),
   submitContact: (data) => req("POST", "/support/contact", data),
   updateSupport: (data) => req("PATCH", "/support", data),
 
