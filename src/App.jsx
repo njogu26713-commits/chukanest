@@ -3624,6 +3624,7 @@ export default function App() {
   const [hostelLoading, setHostelLoading] = useState(true);
   const [dark, setDark] = useState(() => localStorage.getItem("cn_dark") === "1");
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [appInstalled, setAppInstalled] = useState(() => window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true);
   const toastRef = useRef(null);
 
   // Apply theme palette before every render so all children read correct colors
@@ -3651,7 +3652,10 @@ export default function App() {
       event.preventDefault();
       setInstallPrompt(event);
     };
-    const onInstalled = () => setInstallPrompt(null);
+    const onInstalled = () => {
+      setInstallPrompt(null);
+      setAppInstalled(true);
+    };
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
@@ -3663,8 +3667,9 @@ export default function App() {
   const handleInstall = async () => {
     if (installPrompt) {
       installPrompt.prompt();
-      await installPrompt.userChoice;
+      const choice = await installPrompt.userChoice;
       setInstallPrompt(null);
+      if (choice?.outcome === "accepted") setAppInstalled(true);
       return;
     }
     const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
@@ -3792,7 +3797,7 @@ export default function App() {
     return (
       <div className="min-h-screen w-full" style={{ background: C.bg, color: C.ink }}>
         <OwnerPortal currentUser={currentUser} onAuthed={handleAuthed} onLogout={handleLogout} showToast={showToast} />
-        <FloatingInstallButton onInstall={handleInstall} />
+        {!appInstalled && <FloatingInstallButton onInstall={handleInstall} />}
       </div>
     );
   }
@@ -3807,7 +3812,7 @@ export default function App() {
         <div className="hidden md:block h-full">
           <AuthScreen onAuthed={handleAuthed} showToast={showToast} />
         </div>
-        <FloatingInstallButton onInstall={handleInstall} />
+        {!appInstalled && <FloatingInstallButton onInstall={handleInstall} />}
       </div>
     );
   }
@@ -3816,7 +3821,7 @@ export default function App() {
     <div className="flex h-screen w-full overflow-hidden" style={{ background: C.bg, color: C.ink }}>
       <Toast toast={toast} />
       <AppNav tab={tab} setTab={setTab} role={role} dark={dark} toggleDark={toggleDark} />
-      <FloatingInstallButton onInstall={handleInstall} />
+      {!appInstalled && <FloatingInstallButton onInstall={handleInstall} />}
 
       <div className="min-w-0 min-h-0 flex-1 overflow-hidden md:ml-[220px]">
         {openHostel ? (
