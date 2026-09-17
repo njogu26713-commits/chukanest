@@ -2896,7 +2896,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
                           await api.deleteUser(u.id);
                           setUsers((us) => us.filter((x) => x.id !== u.id));
                           showToast(`${u.name || u.email} deleted`);
-                        } catch { showToast("Delete failed"); }
+                        } catch (err) { showToast(err.message || "Delete failed"); }
                       }}
                       className="rounded-xl px-2.5 py-1.5 text-[11px] font-semibold"
                       style={{ ...fBody, background: "#F5F5F5", color: C.inkSoft }}

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import User from "../models/User.js";
 import Hostel from "../models/Hostel.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.js";
@@ -43,13 +44,24 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
 // DELETE /api/users/:id — admin only
 router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: "Not found" });
     if (user.role === "admin") return res.status(403).json({ error: "Cannot delete an admin account" });
-    await User.findByIdAndDelete(req.params.id);
+
+    // Preserve historical listings while removing their ownership link.
+    await Hostel.updateMany(
+      { owner: user._id },
+      { $set: { owner: null, ownerVisibleUntil: null } }
+    );
+    const result = await User.deleteOne({ _id: user._id });
+    if (result.deletedCount !== 1) return res.status(409).json({ error: "User could not be deleted" });
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("User deletion failed:", err);
+    res.status(500).json({ error: "User deletion failed. Please try again." });
   }
 });
 
