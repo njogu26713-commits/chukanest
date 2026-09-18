@@ -1191,7 +1191,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
       {/* Image carousel */}
       <div
         className="relative w-full overflow-hidden"
-        style={{ height: "clamp(220px, 42vh, 480px)", flexShrink: 0 }}
+        style={{ aspectRatio: "1 / 1", maxWidth: 680, margin: "0 auto", flexShrink: 0, background: C.surface }}
         onTouchStart={onDetailTouchStart}
         onTouchEnd={onDetailTouchEnd}
       >
@@ -1210,7 +1210,7 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
               key={i}
               src={src}
               alt=""
-              style={{ width: `${100 / hostel.images.length}%`, height: "100%", objectFit: "cover", flexShrink: 0 }}
+              style={{ width: `${100 / hostel.images.length}%`, height: "100%", objectFit: "contain", background: C.surface, flexShrink: 0 }}
             />
           ))}
         </div>
