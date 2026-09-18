@@ -27,19 +27,22 @@ const configuredOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_ORIG
   .filter(Boolean);
 
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({
-  origin(origin, callback) {
-    // Non-browser tools and same-origin server requests have no Origin header.
-    if (!origin) return callback(null, true);
-    if (configuredOrigins.includes(origin)) return callback(null, true);
-    if (process.env.NODE_ENV !== "production" && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-    callback(new Error("Origin is not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+app.use((req, res, next) => {
+  const sameOrigin = `${req.protocol}://${req.get("host")}`;
+  cors({
+    origin(origin, callback) {
+      // Non-browser tools and same-origin server requests have no Origin header.
+      if (!origin || origin === sameOrigin) return callback(null, true);
+      if (configuredOrigins.includes(origin)) return callback(null, true);
+      if (process.env.NODE_ENV !== "production" && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error("Origin is not allowed by CORS"));
+    },
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })(req, res, next);
+});
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false, limit: "100kb" }));
 
