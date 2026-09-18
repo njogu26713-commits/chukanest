@@ -1265,7 +1265,10 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-28">
+      <div
+        className="flex-1 overflow-y-auto"
+        style={{ paddingBottom: "calc(9rem + env(safe-area-inset-bottom))" }}
+      >
         {hostel.isLocked && (
           <div className="px-4 pt-4"><PremiumUpgradeCard showToast={showToast} onActivated={onPremiumActivated} /></div>
         )}
@@ -1328,10 +1331,6 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
           {tab === "about" && (
             <div>
               <p className="text-[14px] leading-relaxed" style={{ ...fBody, color: C.ink }}>{hostel.description}</p>
-              <div className="mt-4 rounded-2xl p-3.5" style={{ background: C.mint }}>
-                <div className="text-[13px] font-semibold mb-2" style={{ ...fBody, color: C.primaryDark }}>{hostel.contactRole || "Landlord"}</div>
-                <div className="text-[13px]" style={{ ...fBody, color: C.inkSoft }}>{hostel.phone}</div>
-              </div>
             </div>
           )}
 
@@ -1424,9 +1423,9 @@ function DetailScreen({ hostel, isFav, onToggleFav, onBack, reviews, onLoadRevie
       </div>
 
       {/* CTA */}
-      <div className="fixed bottom-16 left-0 right-0 flex gap-2 px-3 pb-2 pt-2 sm:px-4 md:bottom-0 md:left-[220px] md:flex-row" style={{ background: C.surface, borderTop: `1px solid ${C.line}`, zIndex: 20 }}>
+      <div className="fixed bottom-16 left-0 right-0 flex gap-2 px-3 pb-2 pt-2 sm:px-4 md:bottom-0 md:left-[220px] md:flex-row" style={{ background: C.surface, borderTop: `1px solid ${C.line}`, paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))", zIndex: 20 }}>
         <PrimaryButton className="min-w-0 flex-1" variant="ghost" icon={Phone} onClick={() => window.open(`tel:${hostel.phone}`, "_self")}>Call</PrimaryButton>
-        <PrimaryButton className="min-w-0 flex-1" full icon={MessageCircle} onClick={() => window.open(`https://wa.me/${hostel.phone.replace(/\D/g, "").replace(/^0/, "254")}`, "_blank")}>Contact {hostel.contactRole || "Landlord"}</PrimaryButton>
+        <PrimaryButton className="min-w-0 flex-1" full icon={MessageCircle} onClick={() => window.open(`https://wa.me/${hostel.phone.replace(/\D/g, "").replace(/^0/, "254")}`, "_blank")}>Chat</PrimaryButton>
       </div>
     </div>
   );
