@@ -6,7 +6,7 @@ import { requireAuth, requireAdmin, requireOwner } from "../middleware/auth.js";
 
 const router = Router();
 const PREMIUM_PRICE = 400;
-const OWNER_PRICE = 999;
+const OWNER_PRICE = 99;
 const SUBSCRIPTION_DAYS = 30;
 
 function normalizePhone(value = "") {
@@ -80,7 +80,7 @@ router.get("/owner-status", requireAuth, requireOwner, async (req, res) => {
   }
 });
 
-// POST /api/payments/owner-stk — starts a KES 999, 30-day owner listing subscription.
+// POST /api/payments/owner-stk — starts a KES 99, 30-day owner listing subscription.
 router.post("/owner-stk", requireAuth, requireOwner, async (req, res) => {
   try {
     const phone = normalizePhone(req.body.phone);

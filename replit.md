@@ -8,7 +8,7 @@ A hostel-finder web app for Chuka University students in Kenya. Students can bro
 - **Backend**: Node.js + Express (port 3001)
 - **Database**: MongoDB (via Mongoose)
 - **Auth**: JWT (`SESSION_SECRET` env var), with student, owner, and admin roles
-- **Owner portal**: `/owner`; owners pay KSh 999 for 30 days of listing visibility
+- **Owner portal**: `/owner`; owners pay KSh 99 for 30 days of listing visibility
 
 ## Running the app locally
 
@@ -114,7 +114,7 @@ src/
 - `POST /api/users/me/bookmarks/:hostelId` — toggle bookmark
 - `POST /api/auth/owner/signup` / `POST /api/auth/owner/login` — owner authentication
 - `GET /api/owner/listings` — owner’s listings and generated tokens
-- `POST /api/owner/listings` — create a listing only with an active KSh 999 entitlement
+- `POST /api/owner/listings` — create a listing only with an active KSh 99 entitlement
 - `POST /api/payments/owner-stk` — start the owner subscription payment
 
 ## Notes

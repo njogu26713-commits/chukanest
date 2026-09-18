@@ -2589,7 +2589,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
   const [supportSettings, setSupportSettings] = useState(FALLBACK_SUPPORT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [hostelModal, setHostelModal] = useState(null); // null | { hostel: null } | { hostel: <obj> }
-  const [manualPayment, setManualPayment] = useState({ ownerId: "", ownerName: "", amount: "999", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
+  const [manualPayment, setManualPayment] = useState({ ownerId: "", ownerName: "", amount: "99", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
   const [savingManualPayment, setSavingManualPayment] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState(null);
 
@@ -2916,7 +2916,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <div className="text-[15px] font-bold" style={{ ...fDisplay, color: C.ink }}>Payments & transactions</div>
-                <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{payments.length} payment attempts · Premium KES 400 · Owner KES 999 / 30 days</div>
+                <div className="text-[12px]" style={{ ...fBody, color: C.inkSoft }}>{payments.length} payment attempts · Premium KES 400 · Owner KES 99 / 30 days</div>
               </div>
               <Badge tone="gold">M-Pesa</Badge>
             </div>
@@ -2932,7 +2932,7 @@ function AdminScreen({ showToast, onHostelSaved }) {
                   setUsers((current) => current.map((user) => user.id === manualPayment.ownerId
                     ? { ...user, phone: manualPayment.phone || user.phone, ownerSubscriptionUntil: saved.expiresAt }
                     : user));
-                  setManualPayment({ ownerId: "", ownerName: "", amount: "999", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
+                  setManualPayment({ ownerId: "", ownerName: "", amount: "99", days: "30", phone: "", transactionCode: "", paidAt: new Date().toISOString().slice(0, 10), notes: "" });
                   showToast("Manual owner payment recorded and access activated ✓");
                 } catch (err) {
                   showToast(err.message || "Could not record payment");

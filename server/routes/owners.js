@@ -63,7 +63,7 @@ router.get("/me", requireAuth, requireOwner, async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email, phone: user.phone || "" },
       active: !!until,
       ownerSubscriptionUntil: until,
-      amount: 999,
+      amount: 99,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -80,13 +80,13 @@ router.get("/listings", requireAuth, requireOwner, async (req, res) => {
   }
 });
 
-// POST /api/owner/listings — requires an active KSh 999 entitlement.
+// POST /api/owner/listings — requires an active KSh 99 entitlement.
 router.post("/listings", requireAuth, requireOwner, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("ownerSubscriptionUntil");
     const until = activeUntil(user);
     if (!until) {
-      return res.status(402).json({ error: "Pay KSh 999 for 30 days of listing visibility before uploading a house." });
+      return res.status(402).json({ error: "Pay KSh 99 for 30 days of listing visibility before uploading a house." });
     }
 
     const data = pickListing(req.body);
